@@ -28,7 +28,7 @@ export default function MessagesPage() {
         const data = d.data()
         const otherId = data.participants.find((p: string) => p !== user.uid)
         const profileSnap = await getDoc(doc(db, 'profiles', otherId))
-        convs.push({ id: d.id, ...data, otherUser: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as Profile : undefined })
+        convs.push({ id: d.id, ...data, otherUser: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as Profile : undefined } as any as Conversation)
       }
       setConversations(convs)
     })
