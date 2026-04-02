@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yawp Demo Setup</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .demo-accounts {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .account-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .account-info h3 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .account-info p {
+            color: #666;
+            font-size: 12px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 30px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-left: 4px solid #1976d2;
+        }
+        .status.success {
+            background: #e8f5e9;
+            color: #388e3c;
+            border-left: 4px solid #388e3c;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+        }
+        .status.loading {
+            background: #fff3e0;
+            color: #e65100;
+            border-left: 4px solid #e65100;
+        }
+        .logs {
+            margin-top: 20px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Monaco', monospace;
+            font-size: 11px;
+            max-height: 200px;
+            overflow-y: auto;
+            color: #333;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .log-entry.success { color: #2e7d32; }
+        .log-entry.error { color: #c62828; }
+        .log-entry.info { color: #1565c0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 Yawp Demo Setup</h1>
+        <p class="subtitle">Create demo accounts and populate sample data</p>
+
+        <div class="demo-accounts">
+            <div class="account-card">
+                <div class="account-info">
+                    <h3>Alex Rivera</h3>
+                    <p>demo1@yawp.com / password123</p>
+                </div>
+                <button class="btn btn-primary" onclick="createDemoAccount(1)">Create</button>
+            </div>
+            <div class="account-card">
+                <div class="account-info">
+                    <h3>Jordan Chen</h3>
+                    <p>demo2@yawp.com / password123</p>
+                </div>
+                <button class="btn btn-primary" onclick="createDemoAccount(2)">Create</button>
+            </div>
+            <div class="account-card">
+                <div class="account-info">
+                    <h3>Taylor Morgan</h3>
+                    <p>demo3@yawp.com / password123</p>
+                </div>
+                <button class="btn btn-primary" onclick="createDemoAccount(3)">Create</button>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 14px;" onclick="createAllDemo()">
+            Create All & Seed Data
+        </button>
+
+        <div id="status" class="status info" style="display: none;"></div>
+        <div class="logs" id="logs"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js';
+        import { getFirestore, collection, doc, setDoc, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAVjZiW2V6ejXRLeNJ7s0qG-tuOWMA-HYQ",
+            authDomain: "yawpsocial-372ed.firebaseapp.com",
+            databaseURL: "https://yawpsocial-372ed-default-rtdb.firebaseio.com",
+            projectId: "yawpsocial-372ed",
+            storageBucket: "yawpsocial-372ed.firebasestorage.app",
+            messagingSenderId: "338138975898",
+            appId: "1:338138975898:web:8fc30cbb7a83413c671923",
+            measurementId: "G-9Y4YYGZBTN"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const demoUsers = [
+            {
+                id: 1,
+                email: 'demo1@yawp.com',
+                password: 'password123',
+                name: 'Alex Rivera',
+                bio: '🌟 Tech enthusiast & coffee lover',
+                avatar: 'https://i.pravatar.cc/150?img=1'
+            },
+            {
+                id: 2,
+                email: 'demo2@yawp.com',
+                password: 'password123',
+                name: 'Jordan Chen',
+                bio: '📚 Designer & creative thinker',
+                avatar: 'https://i.pravatar.cc/150?img=2'
+            },
+            {
+                id: 3,
+                email: 'demo3@yawp.com',
+                password: 'password123',
+                name: 'Taylor Morgan',
+                bio: '🎨 Artist & community builder',
+                avatar: 'https://i.pravatar.cc/150?img=3'
+            }
+        ];
+
+        window.createDemoAccount = async (userNum) => {
+            const user = demoUsers[userNum - 1];
+            showStatus(`Creating account for ${user.name}...`, 'loading');
+            clearLogs();
+            
+            try {
+                const userCred = await createUserWithEmailAndPassword(auth, user.email, user.password);
+                const userId = userCred.user.uid;
+                addLog(`✓ User created: ${userId}`, 'success');
+
+                // Create profile
+                await setDoc(doc(db, 'profiles', userId), {
+                    displayName: user.name,
+                    bio: user.bio,
+                    avatar: user.avatar,
+                    createdAt: serverTimestamp()
+                });
+                addLog(`✓ Profile created for ${user.name}`, 'success');
+
+                showStatus(`✅ Account created! Email: ${user.email}`, 'success');
+            } catch (error) {
+                addLog(`✗ Error: ${error.message}`, 'error');
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        };
+
+        window.createAllDemo = async () => {
+            showStatus('Creating all demo accounts and seeding data...', 'loading');
+            clearLogs();
+            
+            try {
+                let userIds = [];
+
+                // Create all accounts
+                for (const user of demoUsers) {
+                    try {
+                        const userCred = await createUserWithEmailAndPassword(auth, user.email, user.password);
+                        const userId = userCred.user.uid;
+                        userIds.push({ ...user, uid: userId });
+                        addLog(`✓ ${user.name} created`, 'success');
+
+                        // Create profile
+                        await setDoc(doc(db, 'profiles', userId), {
+                            displayName: user.name,
+                            bio: user.bio,
+                            avatar: user.avatar,
+                            createdAt: serverTimestamp()
+                        });
+                    } catch (error) {
+                        if (error.code === 'auth/email-already-in-use') {
+                            addLog(`⚠ ${user.name} already exists`, 'info');
+                        } else {
+                            throw error;
+                        }
+                    }
+                }
+
+                // Seed sample posts
+                const samplePosts = [
+                    "Just launched Yawp! Excited to share this with everyone 🚀",
+                    "What are your thoughts on social media these days?",
+                    "Building in public is the best way to learn 📚",
+                    "Anyone else spending too much time on their projects? 😅",
+                    "Grateful for this amazing community! 🙏"
+                ];
+
+                for (let i = 0; i < userIds.length; i++) {
+                    for (let j = 0; j < 2; j++) {
+                        await addDoc(collection(db, 'posts'), {
+                            userId: userIds[i].uid,
+                            text: samplePosts[(i * 2 + j) % samplePosts.length],
+                            createdAt: serverTimestamp(),
+                            hearts: {}
+                        });
+                    }
+                }
+                addLog(`✓ Created ${userIds.length * 2} sample posts`, 'success');
+
+                // Create sample circle
+                const circleRef = await addDoc(collection(db, 'circles'), {
+                    name: 'Yawp Community',
+                    description: 'A place to discuss ideas and connect',
+                    createdBy: userIds[0].uid,
+                    members: userIds.map(u => u.uid),
+                    createdAt: serverTimestamp()
+                });
+                addLog(`✓ Created demo circle`, 'success');
+
+                // Add circle messages
+                const circleMessages = [
+                    "Welcome to Yawp! 👋",
+                    "Great to have everyone here!",
+                    "Let's build something amazing together 🎯"
+                ];
+                
+                for (let i = 0; i < circleMessages.length; i++) {
+                    await addDoc(collection(db, 'circles', circleRef.id, 'messages'), {
+                        userId: userIds[i % userIds.length].uid,
+                        text: circleMessages[i],
+                        createdAt: serverTimestamp()
+                    });
+                }
+                addLog(`✓ Added circle messages`, 'success');
+
+                showStatus(`✅ All set! ${userIds.length} demo accounts created with sample posts and circles.`, 'success');
+                addLog('🎉 Demo setup complete!', 'success');
+            } catch (error) {
+                addLog(`✗ Error: ${error.message}`, 'error');
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        };
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+
+        function addLog(message, type) {
+            const logs = document.getElementById('logs');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(entry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
