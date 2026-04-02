@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Setup</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+</head>
+<body>
+    <h1>Demo Account Setup</h1>
+    <script>
+        // TODO: Replace these with your app's Firebase project configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(app);
+
+        // Function to create demo accounts
+        async function createDemoAccounts() {
+            const demoUsers = [
+                { username: 'demoUser1', email: 'demo1@example.com' },
+                { username: 'demoUser2', email: 'demo2@example.com' }
+            ];
+
+            for (const user of demoUsers) {
+                await db.collection('users').add(user);
+                console.log(`Created account for: ${user.username}`);
+            }
+        }
+
+        // Seed Firestore with demo data
+        createDemoAccounts();
+    </script>
+</body>
+</html>
