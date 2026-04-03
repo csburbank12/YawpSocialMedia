@@ -22,8 +22,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const fetchProfile = async (uid: string) => {
-    const snap = await getDoc(doc(db, 'profiles', uid))
-    if (snap.exists()) setProfile({ id: snap.id, ...snap.data() } as Profile)
+    try {
+      const snap = await getDoc(doc(db, 'profiles', uid))
+      if (snap.exists()) setProfile({ id: snap.id, ...snap.data() } as Profile)
+      else setProfile(null)
+    } catch {
+      setProfile(null)
+    }
   }
 
   const refreshProfile = async () => {

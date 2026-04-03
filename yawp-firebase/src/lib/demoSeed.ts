@@ -3,7 +3,7 @@ import {
   signInWithEmailAndPassword,
 } from 'firebase/auth'
 import {
-  doc, setDoc, addDoc, updateDoc, collection, getDocs,
+  doc, setDoc, addDoc, updateDoc, collection, getDocs, getDoc,
   query, where, limit, increment, writeBatch,
 } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
@@ -254,14 +254,12 @@ async function seedAll(uids: string[]) {
 export async function launchDemo(): Promise<void> {
   const uid0 = await getOrCreateUid(DEMO_PROFILES[0])
 
-  const profileSnap = await getDocs(
-    query(collection(db, 'profiles'), where('username', '==', 'alex_rivera'), limit(1))
-  )
+  const profileDoc = await getDoc(doc(db, 'profiles', uid0))
   const postsSnap = await getDocs(
     query(collection(db, 'posts'), where('userId', '==', uid0), limit(1))
   )
 
-  const needsSeed = profileSnap.empty || postsSnap.empty
+  const needsSeed = !profileDoc.exists() || postsSnap.empty
 
   if (needsSeed) {
     await auth.signOut()
