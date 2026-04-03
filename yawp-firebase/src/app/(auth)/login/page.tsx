@@ -43,8 +43,13 @@ export default function LoginPage() {
     try {
       await launchDemo()
       router.push('/feed')
+      return
     } catch (err: any) {
-      setDemoStatus(err?.message || err?.code || 'Demo unavailable — try again shortly.')
+      if (err?.code === 'auth/too-many-requests') {
+        setDemoStatus('Too many demo attempts. Please wait a minute and try again.')
+      } else {
+        setDemoStatus(err?.message || err?.code || 'Demo unavailable — try again shortly.')
+      }
       setDemoLoading(false)
     }
   }

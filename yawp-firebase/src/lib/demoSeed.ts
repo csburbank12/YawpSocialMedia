@@ -3,7 +3,7 @@ import {
   signInWithEmailAndPassword,
 } from 'firebase/auth'
 import {
-  doc, setDoc, addDoc, updateDoc, collection, getDocs,
+  doc, setDoc, addDoc, updateDoc, collection, getDocs, getDoc,
   query, where, limit, increment, writeBatch,
 } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
@@ -60,10 +60,10 @@ const SEED_CIRCLES = [
     color: '#47FFB2', createdBy: 0,
     messages: [
       { u: 0, content: "Currently 60 pages into Ursula K. Le Guin's The Dispossessed. Reading one chapter a day. Highly recommend this pace." },
-      { u: 1, content: "I did that with Middlemarch last year. One chapter over coffee each morning. Finished it feeling genuinely changed." },
-      { u: 2, content: "Any recommendations for books that reward slow reading? Most contemporary stuff is written to be consumed, not savored." },
-      { u: 0, content: "Anything by Marilynne Robinson. Gilead especially. Every sentence is doing three things at once." },
-      { u: 1, content: "Just finished Gilead actually. Sat with the last page for about 20 minutes before closing it." },
+      { u: 1, content: 'I did that with Middlemarch last year. One chapter over coffee each morning. Finished it feeling genuinely changed.' },
+      { u: 2, content: 'Any recommendations for books that reward slow reading? Most contemporary stuff is written to be consumed, not savored.' },
+      { u: 0, content: 'Anything by Marilynne Robinson. Gilead especially. Every sentence is doing three things at once.' },
+      { u: 1, content: 'Just finished Gilead actually. Sat with the last page for about 20 minutes before closing it.' },
     ],
   },
   {
@@ -71,12 +71,12 @@ const SEED_CIRCLES = [
     description: 'Discussing digital minimalism, attention, and the internet we actually want.',
     color: '#E8FF47', createdBy: 1,
     messages: [
-      { u: 1, content: "Question for the group: what did you do with the time you reclaimed when you quit the algorithmic feeds?" },
-      { u: 2, content: "Honestly? Stared at the wall a lot at first. Then started cooking properly. Then started writing again." },
-      { u: 0, content: "I read more. Not just books — longer articles, things that took concentration. Forgot I used to like that." },
+      { u: 1, content: 'Question for the group: what did you do with the time you reclaimed when you quit the algorithmic feeds?' },
+      { u: 2, content: 'Honestly? Stared at the wall a lot at first. Then started cooking properly. Then started writing again.' },
+      { u: 0, content: 'I read more. Not just books — longer articles, things that took concentration. Forgot I used to like that.' },
       { u: 1, content: "It's not just time stolen, it's the capacity for depth that atrophies." },
-      { u: 2, content: "Reclaiming that capacity is slow. But it's the most worthwhile thing I've done online in years." },
-      { u: 0, content: "And here we are on Yawp. Being weird and slow on purpose." },
+      { u: 2, content: 'Reclaiming that capacity is slow. But it\'s the most worthwhile thing I\'ve done online in years.' },
+      { u: 0, content: 'And here we are on Yawp. Being weird and slow on purpose.' },
     ],
   },
   {
@@ -85,13 +85,18 @@ const SEED_CIRCLES = [
     color: '#7C4DFF', createdBy: 1,
     messages: [
       { u: 1, content: "Day 31. Still going. Today: a memory from age 9 I haven't thought about in years. Pages keep surfacing things." },
-      { u: 0, content: "I started two weeks ago because of your posts about this. It's stranger than I expected. More honest." },
-      { u: 2, content: "What time do you all write? I've been doing it at 6am but wondering if evening works too." },
-      { u: 1, content: "Morning is the whole point for me — before the day has a chance to shape my thoughts." },
-      { u: 0, content: "Morning. Always morning. Before my phone. Before coffee even. The first-draft brain." },
+      { u: 0, content: 'I started two weeks ago because of your posts about this. It\'s stranger than I expected. More honest.' },
+      { u: 2, content: 'What time do you all write? I\'ve been doing it at 6am but wondering if evening works too.' },
+      { u: 1, content: 'Morning is the whole point for me — before the day has a chance to shape my thoughts.' },
+      { u: 0, content: 'Morning. Always morning. Before my phone. Before coffee even. The first-draft brain.' },
     ],
   },
 ]
+
+async function ensureDemoSignIn(): Promise<void> {
+  if (auth.currentUser?.email === DEMO_CREDS.email) return
+  await signInWithEmailAndPassword(auth, DEMO_CREDS.email, DEMO_CREDS.password)
+}
 
 async function getOrCreateUid(profile: typeof DEMO_PROFILES[number]): Promise<string> {
   try {
@@ -124,16 +129,16 @@ async function seedAll(uids: string[]) {
 
   // Replies
   const REPLIES = [
-    { postIdx: 0,  u: 1, content: "Same experience. The silence when you first quit is uncomfortable — then it becomes the point.", ago: 2 },
-    { postIdx: 0,  u: 2, content: "Six months off and I still feel the phantom reach for the app.", ago: 2 },
-    { postIdx: 6,  u: 0, content: "Genuinely the most subversive thing a platform can do right now.", ago: 1 },
+    { postIdx: 0,  u: 1, content: 'Same experience. The silence when you first quit is uncomfortable — then it becomes the point.', ago: 2 },
+    { postIdx: 0,  u: 2, content: 'Six months off and I still feel the phantom reach for the app.', ago: 2 },
+    { postIdx: 6,  u: 0, content: 'Genuinely the most subversive thing a platform can do right now.', ago: 1 },
     { postIdx: 6,  u: 2, content: "Chronological is just… respecting the reader's time.", ago: 1 },
-    { postIdx: 8,  u: 0, content: "Discovery vs delivery is a perfect framing. Going to be thinking about this one.", ago: 5 },
-    { postIdx: 9,  u: 2, content: "This needs to be on a poster somewhere.", ago: 8 },
-    { postIdx: 10, u: 0, content: "Written at 2am and it still hits. Thank you.", ago: 13 },
-    { postIdx: 12, u: 1, content: "The first week is the hardest. After that you stop missing it and start missing the person you were before it.", ago: 2 },
-    { postIdx: 16, u: 0, content: "This is why I'm here. A conversation, not a broadcast.", ago: 14 },
-    { postIdx: 16, u: 1, content: "And here we are, having one.", ago: 14 },
+    { postIdx: 8,  u: 0, content: 'Discovery vs delivery is a perfect framing. Going to be thinking about this one.', ago: 5 },
+    { postIdx: 9,  u: 2, content: 'This needs to be on a poster somewhere.', ago: 8 },
+    { postIdx: 10, u: 0, content: 'Written at 2am and it still hits. Thank you.', ago: 13 },
+    { postIdx: 12, u: 1, content: 'The first week is the hardest. After that you stop missing it and start missing the person you were before it.', ago: 2 },
+    { postIdx: 16, u: 0, content: 'This is why I\'m here. A conversation, not a broadcast.', ago: 14 },
+    { postIdx: 16, u: 1, content: 'And here we are, having one.', ago: 14 },
   ]
   for (const r of REPLIES) {
     const postRef = doc(db, 'posts', postIds[r.postIdx])
@@ -178,8 +183,8 @@ async function seedAll(uids: string[]) {
     { sender: uids[0], text: "Hey — did you see Jordan's post about follower counts? Really well put.", ago: 3 },
     { sender: uids[1], text: "Yes! 'Leaderboards for a game nobody agreed to play' is going to live in my head for a while.", ago: 3 },
     { sender: uids[0], text: "I found this place through a blog post that called it 'the anti-Twitter.' Took me a week to understand why that was a compliment.", ago: 2 },
-    { sender: uids[1], text: "Ha. Same. I kept looking for the engagement metrics and then slowly realized that was the whole point.", ago: 2 },
-    { sender: uids[0], text: "And here we are.", ago: 1 },
+    { sender: uids[1], text: 'Ha. Same. I kept looking for the engagement metrics and then slowly realized that was the whole point.', ago: 2 },
+    { sender: uids[0], text: 'And here we are.', ago: 1 },
   ]
   for (const dm of DMS) {
     await addDoc(collection(convRef, 'messages'), {
@@ -254,14 +259,12 @@ async function seedAll(uids: string[]) {
 export async function launchDemo(): Promise<void> {
   const uid0 = await getOrCreateUid(DEMO_PROFILES[0])
 
-  const profileSnap = await getDocs(
-    query(collection(db, 'profiles'), where('username', '==', 'alex_rivera'), limit(1))
-  )
+  const profileSnap = await getDoc(doc(db, 'profiles', uid0))
   const postsSnap = await getDocs(
     query(collection(db, 'posts'), where('userId', '==', uid0), limit(1))
   )
 
-  const needsSeed = profileSnap.empty || postsSnap.empty
+  const needsSeed = !profileSnap.exists() || postsSnap.empty
 
   if (needsSeed) {
     await auth.signOut()
@@ -284,11 +287,11 @@ export async function launchDemo(): Promise<void> {
     }
 
     // Sign in as demo1 before seeding so all Firestore writes are authenticated
-    await signInWithEmailAndPassword(auth, DEMO_CREDS.email, DEMO_CREDS.password)
+    await ensureDemoSignIn()
     await seedAll(uids)
-  } else {
-    // Fast path: ensure demo1 is signed in (getOrCreateUid already did this,
-    // but be explicit in case auth state is stale)
-    await signInWithEmailAndPassword(auth, DEMO_CREDS.email, DEMO_CREDS.password)
+    return
   }
+
+  // Fast path: skip extra auth roundtrips when demo1 is already signed in.
+  await ensureDemoSignIn()
 }
