@@ -130,14 +130,13 @@ export default function Home() {
         </div>
 
         <div style={{ marginTop:8 }}>
-          <div style={{ color:'#333', fontSize:12, fontFamily:"'DM Mono',monospace", marginBottom:12, letterSpacing:'0.08em' }}>— or —</div>
-          <button onClick={tryDemo} disabled={demoLoading} style={{ background:'none', border:'1px solid #2A2A2A', borderRadius:24, padding:'11px 26px', color: demoLoading ? '#555' : '#666', fontSize:14, cursor: demoLoading ? 'default' : 'pointer', fontFamily:"'DM Mono',monospace", transition:'color 0.2s, border-color 0.2s' }}
-            onMouseEnter={e => { if (!demoLoading) { (e.currentTarget as HTMLButtonElement).style.borderColor='#E8FF47'; (e.currentTarget as HTMLButtonElement).style.color='#E8FF47' }}}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#2A2A2A'; (e.currentTarget as HTMLButtonElement).style.color='#666' }}>
-            {demoLoading ? (demoStatus || 'Setting up demo…') : 'Try a demo account →'}
+          <div style={{ color:'#555', fontSize:12, fontFamily:"'DM Mono',monospace", marginBottom:14, letterSpacing:'0.08em' }}>— or —</div>
+          <button onClick={tryDemo} disabled={demoLoading} style={{ background:'#141414', border:'1px solid #3A3A3A', borderRadius:24, padding:'12px 28px', color: demoLoading ? '#666' : '#AAA', fontSize:14, cursor: demoLoading ? 'default' : 'pointer', fontFamily:"'DM Mono',monospace", transition:'color 0.2s, border-color 0.2s, background 0.2s' }}
+            onMouseEnter={e => { if (!demoLoading) { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor='#E8FF47'; b.style.color='#E8FF47'; b.style.background='#0D1500' }}}
+            onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor='#3A3A3A'; b.style.color='#AAA'; b.style.background='#141414' }}>
+            {demoLoading ? (demoStatus || 'Setting up demo…') : '▶ Try a demo account — no sign-up needed'}
           </button>
-          <p style={{ color:'#3A3A3A', fontSize:12, marginTop:8, fontFamily:'Georgia,serif' }}>No sign-up. No credit card. Just the thing itself.</p>
-          {demoError && <p style={{ color:'#FF6B6B', fontSize:12, marginTop:6 }}>{demoError}</p>}
+          {demoError && <p style={{ color:'#FF6B6B', fontSize:12, marginTop:8 }}>{demoError}</p>}
         </div>
       </section>
 
