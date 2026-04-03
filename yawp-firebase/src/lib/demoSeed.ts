@@ -283,7 +283,12 @@ export async function launchDemo(): Promise<void> {
       uids.push(uid)
     }
 
+    // Sign in as demo1 before seeding so all Firestore writes are authenticated
+    await signInWithEmailAndPassword(auth, DEMO_CREDS.email, DEMO_CREDS.password)
     await seedAll(uids)
+  } else {
+    // Fast path: ensure demo1 is signed in (getOrCreateUid already did this,
+    // but be explicit in case auth state is stale)
     await signInWithEmailAndPassword(auth, DEMO_CREDS.email, DEMO_CREDS.password)
   }
 }
