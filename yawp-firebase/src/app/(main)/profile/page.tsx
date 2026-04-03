@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { collection, query, where, orderBy, limit, getDocs, doc, updateDoc } from 'firebase/firestore'
+import { collection, query, where, orderBy, limit, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
@@ -16,16 +16,25 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('')
   const [bio, setBio] = useState('')
   const [saving, setSaving] = useState(false)
+  const [followingCount, setFollowingCount] = useState(0)
+  const [followerCount, setFollowerCount] = useState(0)
   const router = useRouter()
 
   useEffect(() => {
     if (!user) return
     setDisplayName(profile?.displayName ?? '')
     setBio(profile?.bio ?? '')
+
     const load = async () => {
       const q = query(collection(db, 'posts'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'), limit(20))
       const snap = await getDocs(q)
       setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Post)))
+
+      const followingSnap = await getDocs(collection(db, 'profiles', user.uid, 'following'))
+      setFollowingCount(followingSnap.size)
+
+      const followerSnap = await getDocs(collection(db, 'profiles', user.uid, 'followers'))
+      setFollowerCount(followerSnap.size)
     }
     load()
   }, [user, profile])
@@ -40,6 +49,12 @@ export default function ProfilePage() {
     await refreshProfile()
     setSaving(false)
     setEditing(false)
+  }
+
+  const handleDeletePost = async (postId: string) => {
+    if (!confirm('Delete this yawp?')) return
+    await deleteDoc(doc(db, 'posts', postId))
+    setPosts(prev => prev.filter(p => p.id !== postId))
   }
 
   const handleSignOut = async () => {
@@ -79,10 +94,19 @@ export default function ProfilePage() {
             style={{ width:'100%', background:'#1A1A1A', border:'1px solid #3A3A3A', borderRadius:8, padding:'8px 10px', color:'#F0F0F0', fontSize:14, outline:'none', resize:'none', fontFamily:'Georgia,serif', lineHeight:1.5, marginBottom:16 }} />
         ) : profile.bio ? (
           <p style={{ color:'#888', fontSize:14, fontFamily:'Georgia,serif', lineHeight:1.6, marginBottom:16 }}>{profile.bio}</p>
-        ) : null}
+        ) : (
+          <p style={{ color:'#444', fontSize:13, fontFamily:'Georgia,serif', lineHeight:1.6, marginBottom:16, fontStyle:'italic' }}>
+            No bio yet.{' '}
+            <span onClick={() => setEditing(true)} style={{ color:'#E8FF47', cursor:'pointer' }}>Add one →</span>
+          </p>
+        )}
 
         <div style={{ display:'flex', gap:28, marginBottom:16 }}>
-          {[{ label:'Yawps', value: posts.length }, { label:'Following', value:0 }, { label:'Followers', value:'—' }].map(s => (
+          {[
+            { label:'Yawps', value: posts.length },
+            { label:'Following', value: followingCount },
+            { label:'Followers', value: followerCount },
+          ].map(s => (
             <div key={s.label}>
               <div style={{ color:'#F0F0F0', fontWeight:700, fontSize:20, fontFamily:"'DM Mono',monospace" }}>{s.value}</div>
               <div style={{ color:'#555', fontSize:11 }}>{s.label}</div>
@@ -90,10 +114,10 @@ export default function ProfilePage() {
           ))}
         </div>
 
-        <div style={{ background:'#E8FF4711', border:'1px solid #E8FF4733', borderRadius:10, padding:'10px 14px', display:'flex', alignItems:'flex-start', gap:10 }}>
-          <span style={{ color:'#E8FF47', fontSize:15 }}>◎</span>
+        <div style={{ background:'#0D1A0D', border:'1px solid #1A3A1A', borderRadius:10, padding:'10px 14px', display:'flex', alignItems:'flex-start', gap:10 }}>
+          <span style={{ color:'#47FFB2', fontSize:15 }}>◎</span>
           <div>
-            <div style={{ color:'#E8FF47', fontSize:12, fontWeight:600 }}>Follower counts are private on Yawp</div>
+            <div style={{ color:'#47FFB2', fontSize:12, fontWeight:600 }}>Follower counts are private on Yawp</div>
             <div style={{ color:'#888', fontSize:11, marginTop:2 }}>Your voice matters, not your number.</div>
           </div>
         </div>
@@ -101,10 +125,17 @@ export default function ProfilePage() {
 
       {/* Yawp+ */}
       {!profile.isPlus && (
-        <div style={{ background:'#141414', border:'1px solid #2A2A2A', borderRadius:16, padding:'20px 24px', marginBottom:24 }}>
-          <div style={{ color:'#F0F0F0', fontWeight:700, fontSize:15, marginBottom:6 }}>Yawp+</div>
-          <p style={{ color:'#888', fontSize:13, fontFamily:'Georgia,serif', lineHeight:1.6, marginBottom:14 }}>Support an ad-free internet. $5/mo.</p>
-          <button style={{ background:'#E8FF47', border:'none', borderRadius:20, padding:'9px 20px', color:'#0D0D0D', fontWeight:700, fontSize:13, cursor:'pointer' }}>Join Yawp+ — $5/mo</button>
+        <div style={{ background:'linear-gradient(135deg, #141414 0%, #1A1500 100%)', border:'1px solid #2A2200', borderRadius:16, padding:'20px 24px', marginBottom:24 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+            <span style={{ background:'#E8FF47', color:'#0D0D0D', fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, fontFamily:"'DM Mono',monospace" }}>PLUS</span>
+            <div style={{ color:'#F0F0F0', fontWeight:700, fontSize:15 }}>Yawp+</div>
+          </div>
+          <p style={{ color:'#888', fontSize:13, fontFamily:'Georgia,serif', lineHeight:1.6, marginBottom:14 }}>
+            Support an ad-free internet. Get early access to new features. Keep the lights on.
+          </p>
+          <button style={{ background:'#E8FF47', border:'none', borderRadius:20, padding:'9px 20px', color:'#0D0D0D', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+            Join Yawp+ — $5/mo
+          </button>
         </div>
       )}
 
@@ -112,16 +143,32 @@ export default function ProfilePage() {
       <div style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace", letterSpacing:'0.1em', marginBottom:16 }}>YOUR YAWPS</div>
       {posts.length === 0 ? (
         <div style={{ textAlign:'center', color:'#555', padding:'40px 20px' }}>
-          <p style={{ fontFamily:'Georgia,serif', fontSize:15, color:'#888' }}>You haven't yawped yet. Go say something.</p>
+          <p style={{ fontSize:28, marginBottom:12 }}>⬡</p>
+          <p style={{ fontFamily:'Georgia,serif', fontSize:15, color:'#888', marginBottom:8 }}>You haven't yawped yet.</p>
+          <button onClick={() => router.push('/feed')} style={{ background:'#E8FF47', border:'none', borderRadius:20, padding:'9px 20px', color:'#0D0D0D', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+            Go say something →
+          </button>
         </div>
       ) : posts.map(post => (
-        <div key={post.id} style={{ background:'#141414', border:'1px solid #2A2A2A', borderRadius:14, padding:'14px 18px', marginBottom:10 }}>
-          <p style={{ color:'#F0F0F0', fontSize:14, fontFamily:'Georgia,serif', lineHeight:1.55, marginBottom:6 }}>{post.content}</p>
-          <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>{formatDistanceToNow(new Date(post.createdAt), { addSuffix:true })}</span>
+        <div key={post.id} style={{ background:'#141414', border:'1px solid #2A2A2A', borderRadius:14, padding:'14px 18px', marginBottom:10, position:'relative' }}
+          onMouseEnter={e => { const btn = e.currentTarget.querySelector<HTMLButtonElement>('.del-btn'); if (btn) btn.style.opacity='1' }}
+          onMouseLeave={e => { const btn = e.currentTarget.querySelector<HTMLButtonElement>('.del-btn'); if (btn) btn.style.opacity='0' }}>
+          <p style={{ color:'#F0F0F0', fontSize:14, fontFamily:'Georgia,serif', lineHeight:1.55, marginBottom:8 }}>{post.content}</p>
+          <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+            <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>{formatDistanceToNow(new Date(post.createdAt), { addSuffix:true })}</span>
+            <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>♥ {post.heartCount}</span>
+            <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>◎ {post.replyCount}</span>
+          </div>
+          <button className="del-btn" onClick={() => handleDeletePost(post.id)}
+            style={{ position:'absolute', top:12, right:12, background:'none', border:'none', color:'#FF6B6B', cursor:'pointer', fontSize:14, opacity:0, transition:'opacity 0.15s', padding:'2px 6px' }}>
+            ✕
+          </button>
         </div>
       ))}
 
-      <button onClick={handleSignOut} style={{ width:'100%', background:'none', border:'1px solid #2A2A2A', borderRadius:20, padding:12, color:'#888', cursor:'pointer', fontSize:14, marginTop:16 }}>
+      <button onClick={handleSignOut} style={{ width:'100%', background:'none', border:'1px solid #2A2A2A', borderRadius:20, padding:12, color:'#555', cursor:'pointer', fontSize:14, marginTop:16, transition:'color 0.15s' }}
+        onMouseEnter={e => (e.currentTarget.style.color = '#F0F0F0')}
+        onMouseLeave={e => (e.currentTarget.style.color = '#555')}>
         Sign out
       </button>
     </div>

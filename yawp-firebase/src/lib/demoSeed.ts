@@ -4,7 +4,7 @@ import {
 } from 'firebase/auth'
 import {
   doc, setDoc, addDoc, updateDoc, collection, getDocs,
-  query, where, limit, increment,
+  query, where, limit, increment, writeBatch,
 } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 
@@ -61,7 +61,7 @@ const SEED_CIRCLES = [
     messages: [
       { u: 0, content: "Currently 60 pages into Ursula K. Le Guin's The Dispossessed. Reading one chapter a day. Highly recommend this pace." },
       { u: 1, content: "I did that with Middlemarch last year. One chapter over coffee each morning. Finished it feeling genuinely changed." },
-      { u: 2, content: "Any recommendations for books that reward slow reading? I find most contemporary stuff is written to be consumed, not savored." },
+      { u: 2, content: "Any recommendations for books that reward slow reading? Most contemporary stuff is written to be consumed, not savored." },
       { u: 0, content: "Anything by Marilynne Robinson. Gilead especially. Every sentence is doing three things at once." },
       { u: 1, content: "Just finished Gilead actually. Sat with the last page for about 20 minutes before closing it." },
     ],
@@ -74,7 +74,7 @@ const SEED_CIRCLES = [
       { u: 1, content: "Question for the group: what did you do with the time you reclaimed when you quit the algorithmic feeds?" },
       { u: 2, content: "Honestly? Stared at the wall a lot at first. Then started cooking properly. Then started writing again." },
       { u: 0, content: "I read more. Not just books — longer articles, things that took concentration. Forgot I used to like that." },
-      { u: 1, content: "I think that's the real cost nobody talks about — it's not just time stolen, it's the capacity for depth that atrophies." },
+      { u: 1, content: "It's not just time stolen, it's the capacity for depth that atrophies." },
       { u: 2, content: "Reclaiming that capacity is slow. But it's the most worthwhile thing I've done online in years." },
       { u: 0, content: "And here we are on Yawp. Being weird and slow on purpose." },
     ],
@@ -84,7 +84,7 @@ const SEED_CIRCLES = [
     description: 'A circle for daily writing practice. Share what you wrote about, not what you wrote.',
     color: '#7C4DFF', createdBy: 1,
     messages: [
-      { u: 1, content: "Day 31. Still going. Today: a memory from age 9 that I haven't thought about in years. Pages keep surfacing things." },
+      { u: 1, content: "Day 31. Still going. Today: a memory from age 9 I haven't thought about in years. Pages keep surfacing things." },
       { u: 0, content: "I started two weeks ago because of your posts about this. It's stranger than I expected. More honest." },
       { u: 2, content: "What time do you all write? I've been doing it at 6am but wondering if evening works too." },
       { u: 1, content: "Morning is the whole point for me — before the day has a chance to shape my thoughts." },
@@ -122,7 +122,7 @@ async function seedAll(uids: string[]) {
     postIds.push(ref.id)
   }
 
-  // Replies (a few to make threads feel alive)
+  // Replies
   const REPLIES = [
     { postIdx: 0,  u: 1, content: "Same experience. The silence when you first quit is uncomfortable — then it becomes the point.", ago: 2 },
     { postIdx: 0,  u: 2, content: "Six months off and I still feel the phantom reach for the app.", ago: 2 },
@@ -168,7 +168,7 @@ async function seedAll(uids: string[]) {
     }
   }
 
-  // A DM conversation between demo1 and demo2
+  // DM conversation between demo1 and demo2
   const convRef = await addDoc(collection(db, 'conversations'), {
     participants: [uids[0], uids[1]],
     lastMessage: 'And here we are.',
@@ -190,6 +190,61 @@ async function seedAll(uids: string[]) {
       createdAt: daysAgo(dm.ago),
     })
   }
+
+  // Mutual follows between all three demo accounts
+  // 0 ↔ 1, 0 ↔ 2, 1 ↔ 2
+  const followPairs = [[0,1],[1,0],[0,2],[2,0],[1,2],[2,1]]
+  const batch = writeBatch(db)
+  for (const [a, b] of followPairs) {
+    const now = daysAgo(15)
+    batch.set(doc(db, 'profiles', uids[a], 'following', uids[b]), { followedAt: now })
+    batch.set(doc(db, 'profiles', uids[b], 'followers', uids[a]), { followedAt: now })
+  }
+  await batch.commit()
+
+  // Seed notifications for demo1 (alex) — hearts from Jordan & Taylor + a follow
+  const notifBatch = writeBatch(db)
+  // Jordan hearted alex's first post
+  notifBatch.set(doc(db, 'notifications', uids[0], 'items', `heart_${postIds[0]}_${uids[1]}`), {
+    type: 'heart',
+    fromUserId: uids[1],
+    fromUsername: DEMO_PROFILES[1].username,
+    fromDisplayName: DEMO_PROFILES[1].displayName,
+    postId: postIds[0],
+    postContent: SEED_POSTS[0].content.slice(0, 80),
+    createdAt: daysAgo(2),
+    read: false,
+  })
+  // Taylor hearted alex's fourth post
+  notifBatch.set(doc(db, 'notifications', uids[0], 'items', `heart_${postIds[3]}_${uids[2]}`), {
+    type: 'heart',
+    fromUserId: uids[2],
+    fromUsername: DEMO_PROFILES[2].username,
+    fromDisplayName: DEMO_PROFILES[2].displayName,
+    postId: postIds[3],
+    postContent: SEED_POSTS[3].content.slice(0, 80),
+    createdAt: daysAgo(8),
+    read: false,
+  })
+  // Jordan followed alex
+  notifBatch.set(doc(db, 'notifications', uids[0], 'items', `follow_${uids[1]}`), {
+    type: 'follow',
+    fromUserId: uids[1],
+    fromUsername: DEMO_PROFILES[1].username,
+    fromDisplayName: DEMO_PROFILES[1].displayName,
+    createdAt: daysAgo(15),
+    read: false,
+  })
+  // Taylor followed alex
+  notifBatch.set(doc(db, 'notifications', uids[0], 'items', `follow_${uids[2]}`), {
+    type: 'follow',
+    fromUserId: uids[2],
+    fromUsername: DEMO_PROFILES[2].username,
+    fromDisplayName: DEMO_PROFILES[2].displayName,
+    createdAt: daysAgo(14),
+    read: false,
+  })
+  await notifBatch.commit()
 }
 
 /**
@@ -197,10 +252,8 @@ async function seedAll(uids: string[]) {
  * Subsequent calls skip seeding (fast path).
  */
 export async function launchDemo(): Promise<void> {
-  // Step 1: sign in as demo1 (create if first time)
   const uid0 = await getOrCreateUid(DEMO_PROFILES[0])
 
-  // Step 2: check if profile + content already exist
   const profileSnap = await getDocs(
     query(collection(db, 'profiles'), where('username', '==', 'alex_rivera'), limit(1))
   )
@@ -211,10 +264,8 @@ export async function launchDemo(): Promise<void> {
   const needsSeed = profileSnap.empty || postsSnap.empty
 
   if (needsSeed) {
-    // Sign out demo1 so we can create the other accounts
     await auth.signOut()
 
-    // Create/retrieve all three demo accounts
     const uids: string[] = []
     for (const profile of DEMO_PROFILES) {
       const uid = await getOrCreateUid(profile)
@@ -233,9 +284,6 @@ export async function launchDemo(): Promise<void> {
     }
 
     await seedAll(uids)
-
-    // Sign back in as demo1 for the visitor session
     await signInWithEmailAndPassword(auth, DEMO_CREDS.email, DEMO_CREDS.password)
   }
-  // If content exists, demo1 is already signed in — nothing else needed
 }
