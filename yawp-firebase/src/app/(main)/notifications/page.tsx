@@ -9,11 +9,12 @@ import Avatar from '@/components/ui/Avatar'
 
 interface NotificationItem {
   id: string
-  type: 'heart' | 'follow' | 'reply'
+  type: 'heart' | 'follow' | 'reply' | 'mention' | 'quote'
   fromUserId: string
   fromUsername: string
   fromDisplayName: string
   postId?: string
+  quotedPostId?: string
   postContent?: string
   replyContent?: string
   createdAt: number
@@ -24,16 +25,22 @@ const TYPE_ICON: Record<string, string> = {
   heart: '♥',
   follow: '＋',
   reply: '◎',
+  mention: '@',
+  quote: '❝',
 }
 const TYPE_COLOR: Record<string, string> = {
   heart: '#FF6B6B',
   follow: '#47FFB2',
   reply: '#7C4DFF',
+  mention: '#47FFB2',
+  quote: '#E8FF47',
 }
 const TYPE_LABEL: Record<string, string> = {
   heart: 'hearted your yawp',
   follow: 'started following you',
   reply: 'replied to your yawp',
+  mention: 'mentioned you',
+  quote: 'amplified your yawp',
 }
 
 export default function NotificationsPage() {

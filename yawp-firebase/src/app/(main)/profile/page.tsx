@@ -8,6 +8,39 @@ import { db, auth } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
 import { Post } from '@/types'
 import Avatar from '@/components/ui/Avatar'
+import RichText from '@/components/ui/RichText'
+
+interface WritingStats {
+  totalPosts: number
+  totalWords: number
+  streak: number
+  firstPostDaysAgo: number | null
+}
+
+function calculateStats(posts: Post[]): WritingStats {
+  if (posts.length === 0) return { totalPosts: 0, totalWords: 0, streak: 0, firstPostDaysAgo: null }
+
+  const totalWords = posts.reduce((sum, p) => sum + p.content.trim().split(/\s+/).filter(Boolean).length, 0)
+
+  // Unique posting days (start of day timestamps)
+  const todayMs = new Date().setHours(0, 0, 0, 0)
+  const days = new Set(posts.map(p => new Date(p.createdAt).setHours(0, 0, 0, 0)))
+  const sorted = Array.from(days).sort((a, b) => b - a) // newest first
+
+  // Streak: start from today if posted today, else from yesterday
+  const startDay = days.has(todayMs) ? todayMs : todayMs - 86_400_000
+  let streak = 0
+  let expected = startDay
+  for (const day of sorted) {
+    if (day === expected) { streak++; expected -= 86_400_000 }
+    else if (day < expected) break
+  }
+
+  const oldest = Math.min(...posts.map(p => p.createdAt))
+  const firstPostDaysAgo = Math.floor((Date.now() - oldest) / 86_400_000)
+
+  return { totalPosts: posts.length, totalWords, streak, firstPostDaysAgo }
+}
 
 export default function ProfilePage() {
   const { user, profile, refreshProfile } = useAuth()
@@ -18,6 +51,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [followingCount, setFollowingCount] = useState(0)
   const [followerCount, setFollowerCount] = useState(0)
+  const [stats, setStats] = useState<WritingStats>({ totalPosts: 0, totalWords: 0, streak: 0, firstPostDaysAgo: null })
   const router = useRouter()
 
   useEffect(() => {
@@ -26,9 +60,12 @@ export default function ProfilePage() {
     setBio(profile?.bio ?? '')
 
     const load = async () => {
-      const q = query(collection(db, 'posts'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'), limit(20))
-      const snap = await getDocs(q)
-      setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Post)))
+      // Load all posts for stats (no limit), then cap display at 20
+      const allQ = query(collection(db, 'posts'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'))
+      const allSnap = await getDocs(allQ)
+      const allPosts = allSnap.docs.map(d => ({ id: d.id, ...d.data() } as Post))
+      setPosts(allPosts.slice(0, 20))
+      setStats(calculateStats(allPosts))
 
       const followingSnap = await getDocs(collection(db, 'profiles', user.uid, 'following'))
       setFollowingCount(followingSnap.size)
@@ -103,7 +140,7 @@ export default function ProfilePage() {
 
         <div style={{ display:'flex', gap:28, marginBottom:16 }}>
           {[
-            { label:'Yawps', value: posts.length },
+            { label:'Yawps', value: stats.totalPosts },
             { label:'Following', value: followingCount },
             { label:'Followers', value: followerCount },
           ].map(s => (
@@ -122,6 +159,35 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Writing Stats */}
+      {stats.totalPosts > 0 && (
+        <div style={{ background:'#141414', border:'1px solid #2A2A2A', borderRadius:16, padding:'20px 24px', marginBottom:16 }}>
+          <div style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace", letterSpacing:'0.1em', marginBottom:16 }}>YOUR WRITING</div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+            <div style={{ background:'#0D0D0D', border:'1px solid #1E1E1E', borderRadius:12, padding:'14px 16px' }}>
+              <div style={{ color:'#E8FF47', fontWeight:700, fontSize:24, fontFamily:"'DM Mono',monospace" }}>
+                {stats.totalWords.toLocaleString()}
+              </div>
+              <div style={{ color:'#555', fontSize:12, marginTop:4 }}>words written</div>
+            </div>
+            <div style={{ background:'#0D0D0D', border:'1px solid #1E1E1E', borderRadius:12, padding:'14px 16px' }}>
+              <div style={{ color:'#47FFB2', fontWeight:700, fontSize:24, fontFamily:"'DM Mono',monospace" }}>
+                {stats.streak}
+                <span style={{ fontSize:14, color:'#47FFB2', marginLeft:4 }}>day{stats.streak !== 1 ? 's' : ''}</span>
+              </div>
+              <div style={{ color:'#555', fontSize:12, marginTop:4 }}>
+                {stats.streak > 1 ? 'writing streak 🔥' : stats.streak === 1 ? 'streak — keep going' : 'current streak'}
+              </div>
+            </div>
+          </div>
+          {stats.firstPostDaysAgo !== null && stats.firstPostDaysAgo > 0 && (
+            <p style={{ color:'#444', fontSize:12, fontFamily:'Georgia,serif', marginTop:14, textAlign:'center' }}>
+              Writing on Yawp for {stats.firstPostDaysAgo} day{stats.firstPostDaysAgo !== 1 ? 's' : ''}.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Yawp+ */}
       {!profile.isPlus && (
@@ -150,16 +216,27 @@ export default function ProfilePage() {
           </button>
         </div>
       ) : posts.map(post => (
-        <div key={post.id} style={{ background:'#141414', border:'1px solid #2A2A2A', borderRadius:14, padding:'14px 18px', marginBottom:10, position:'relative' }}
-          onMouseEnter={e => { const btn = e.currentTarget.querySelector<HTMLButtonElement>('.del-btn'); if (btn) btn.style.opacity='1' }}
-          onMouseLeave={e => { const btn = e.currentTarget.querySelector<HTMLButtonElement>('.del-btn'); if (btn) btn.style.opacity='0' }}>
-          <p style={{ color:'#F0F0F0', fontSize:14, fontFamily:'Georgia,serif', lineHeight:1.55, marginBottom:8 }}>{post.content}</p>
+        <div key={post.id}
+          onClick={() => router.push(`/post/${post.id}`)}
+          style={{ background:'#141414', border:'1px solid #2A2A2A', borderRadius:14, padding:'14px 18px', marginBottom:10, position:'relative', cursor:'pointer', transition:'border-color 0.2s' }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = '#3A3A3A'
+            const btn = e.currentTarget.querySelector<HTMLButtonElement>('.del-btn')
+            if (btn) btn.style.opacity = '1'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = '#2A2A2A'
+            const btn = e.currentTarget.querySelector<HTMLButtonElement>('.del-btn')
+            if (btn) btn.style.opacity = '0'
+          }}>
+          <RichText content={post.content} style={{ color:'#F0F0F0', fontSize:14, fontFamily:'Georgia,serif', lineHeight:1.55, display:'block', marginBottom:8 }} />
           <div style={{ display:'flex', alignItems:'center', gap:16 }}>
             <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>{formatDistanceToNow(new Date(post.createdAt), { addSuffix:true })}</span>
             <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>♥ {post.heartCount}</span>
             <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>◎ {post.replyCount}</span>
+            {post.editedAt && <span style={{ color:'#444', fontSize:10, fontFamily:"'DM Mono',monospace" }}>edited</span>}
           </div>
-          <button className="del-btn" onClick={() => handleDeletePost(post.id)}
+          <button className="del-btn" onClick={e => { e.stopPropagation(); handleDeletePost(post.id) }}
             style={{ position:'absolute', top:12, right:12, background:'none', border:'none', color:'#FF6B6B', cursor:'pointer', fontSize:14, opacity:0, transition:'opacity 0.15s', padding:'2px 6px' }}>
             ✕
           </button>

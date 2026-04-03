@@ -65,6 +65,9 @@ export default function LoginPage() {
           <button type="submit" style={S.btn} disabled={loading}>
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
+          <p style={{ textAlign:'right', marginTop:6 }}>
+            <Link href="/forgot-password" style={{ color:'#555', fontSize:12, fontFamily:"'DM Mono',monospace" }}>Forgot password?</Link>
+          </p>
         </form>
 
         <div style={{ display:'flex', alignItems:'center', gap:10, margin:'24px 0' }}>

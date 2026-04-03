@@ -14,10 +14,14 @@ export interface Post {
   userId: string
   content: string
   tags: string[]
+  mentions?: string[]
+  quotedPostId?: string
+  quotedPost?: Post
   heartCount: number
   echoCount: number
   replyCount: number
   createdAt: number
+  editedAt?: number
   profile?: Profile
   hearted?: boolean
   echoed?: boolean

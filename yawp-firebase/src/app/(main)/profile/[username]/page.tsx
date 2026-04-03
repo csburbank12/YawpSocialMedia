@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
 import { Profile, Post } from '@/types'
 import Avatar from '@/components/ui/Avatar'
+import RichText from '@/components/ui/RichText'
 
 export default function PublicProfilePage({ params }: { params: { username: string } }) {
   const { user, profile: myProfile } = useAuth()
@@ -14,6 +15,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
   const [profile, setProfile] = useState<Profile | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
   const [isFollowing, setIsFollowing] = useState(false)
+  const [isMuted, setIsMuted] = useState(false)
   const [followerCount, setFollowerCount] = useState(0)
   const [notFound, setNotFound] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -25,24 +27,24 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     if (!user) return
     const load = async () => {
       setLoading(true)
-      // Find profile by username
       const snap = await getDocs(query(collection(db, 'profiles'), where('username', '==', username), limit(1)))
       if (snap.empty) { setNotFound(true); setLoading(false); return }
       const profileDoc = snap.docs[0]
       const p = { id: profileDoc.id, ...profileDoc.data() } as Profile
       setProfile(p)
 
-      // Load their posts
       const postsSnap = await getDocs(query(collection(db, 'posts'), where('userId', '==', profileDoc.id), orderBy('createdAt', 'desc'), limit(20)))
       setPosts(postsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Post)))
 
-      // Check if I follow them
       if (!isOwnProfile) {
-        const followSnap = await getDoc(doc(db, 'profiles', user.uid, 'following', profileDoc.id))
+        const [followSnap, muteSnap] = await Promise.all([
+          getDoc(doc(db, 'profiles', user.uid, 'following', profileDoc.id)),
+          getDoc(doc(db, 'profiles', user.uid, 'muted', profileDoc.id)),
+        ])
         setIsFollowing(followSnap.exists())
+        setIsMuted(muteSnap.exists())
       }
 
-      // Follower count (only show to profile owner)
       if (isOwnProfile) {
         const followerSnap = await getDocs(collection(db, 'profiles', profileDoc.id, 'followers'))
         setFollowerCount(followerSnap.size)
@@ -66,14 +68,28 @@ export default function PublicProfilePage({ params }: { params: { username: stri
       await setDoc(myFollowRef, { followedAt: now })
       await setDoc(theirFollowerRef, { followedAt: now })
       await setDoc(doc(db, 'notifications', profile.id, 'items', `follow_${user.uid}`), {
-        type: 'follow',
-        fromUserId: user.uid,
-        fromUsername: myProfile.username,
-        fromDisplayName: myProfile.displayName,
-        createdAt: now,
-        read: false,
+        type: 'follow', fromUserId: user.uid, fromUsername: myProfile.username,
+        fromDisplayName: myProfile.displayName, createdAt: now, read: false,
       })
       setIsFollowing(true)
+    }
+  }
+
+  const toggleMute = async () => {
+    if (!user || !profile) return
+    const muteRef = doc(db, 'profiles', user.uid, 'muted', profile.id)
+    if (isMuted) {
+      await deleteDoc(muteRef)
+      setIsMuted(false)
+    } else {
+      // Muting also unfollows
+      if (isFollowing) {
+        await deleteDoc(doc(db, 'profiles', user.uid, 'following', profile.id))
+        await deleteDoc(doc(db, 'profiles', profile.id, 'followers', user.uid))
+        setIsFollowing(false)
+      }
+      await setDoc(muteRef, { mutedAt: Date.now() })
+      setIsMuted(true)
     }
   }
 
@@ -118,20 +134,44 @@ export default function PublicProfilePage({ params }: { params: { username: stri
               Edit profile
             </button>
           ) : (
-            <button onClick={toggleFollow} style={{
-              background: isFollowing ? '#1A1A1A' : '#E8FF47',
-              border: `1px solid ${isFollowing ? '#3A3A3A' : '#E8FF47'}`,
-              borderRadius:20, color: isFollowing ? '#555' : '#0D0D0D',
-              padding:'7px 18px', cursor:'pointer', fontSize:13, fontWeight:700,
-              fontFamily:"'DM Mono',monospace", transition:'all 0.15s',
-            }}>
-              {isFollowing ? 'Following' : 'Follow'}
-            </button>
+            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+              <button onClick={toggleFollow} style={{
+                background: isFollowing ? '#1A1A1A' : '#E8FF47',
+                border: `1px solid ${isFollowing ? '#3A3A3A' : '#E8FF47'}`,
+                borderRadius:20, color: isFollowing ? '#555' : '#0D0D0D',
+                padding:'7px 18px', cursor:'pointer', fontSize:13, fontWeight:700,
+                fontFamily:"'DM Mono',monospace", transition:'all 0.15s',
+              }}>
+                {isFollowing ? 'Following' : 'Follow'}
+              </button>
+              <button
+                onClick={toggleMute}
+                title={isMuted ? 'Unmute this person' : 'Mute — hide their posts from your feed'}
+                style={{
+                  background: isMuted ? '#3A1A00' : 'none',
+                  border: `1px solid ${isMuted ? '#5A3A00' : '#2A2A2A'}`,
+                  borderRadius:20, color: isMuted ? '#FF8C47' : '#555',
+                  padding:'7px 12px', cursor:'pointer', fontSize:12,
+                  fontFamily:"'DM Mono',monospace", transition:'all 0.15s',
+                }}
+                onMouseEnter={e => { if (!isMuted) { e.currentTarget.style.borderColor='#3A3A3A'; e.currentTarget.style.color='#888' }}}
+                onMouseLeave={e => { if (!isMuted) { e.currentTarget.style.borderColor='#2A2A2A'; e.currentTarget.style.color='#555' }}}
+              >
+                {isMuted ? 'Muted' : 'Mute'}
+              </button>
+            </div>
           )}
         </div>
 
         {profile.bio && (
           <p style={{ color:'#888', fontSize:14, fontFamily:'Georgia,serif', lineHeight:1.6, marginBottom:14 }}>{profile.bio}</p>
+        )}
+
+        {isMuted && (
+          <div style={{ background:'#1A0D00', border:'1px solid #3A2200', borderRadius:10, padding:'8px 12px', marginBottom:12, display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ color:'#FF8C47', fontSize:12, fontFamily:"'DM Mono',monospace" }}>MUTED</span>
+            <span style={{ color:'#555', fontSize:12 }}>Their posts are hidden from your feed.</span>
+          </div>
         )}
 
         <div style={{ display:'flex', gap:24 }}>
@@ -149,19 +189,21 @@ export default function PublicProfilePage({ params }: { params: { username: stri
       </div>
 
       {/* Posts */}
-      <div style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace", letterSpacing:'0.1em', marginBottom:12 }}>
-        YAWPS
-      </div>
+      <div style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace", letterSpacing:'0.1em', marginBottom:12 }}>YAWPS</div>
       {posts.length === 0 ? (
         <div style={{ textAlign:'center', color:'#555', padding:'40px 20px' }}>
           <p style={{ fontFamily:'Georgia,serif', fontSize:15, color:'#888' }}>No yawps yet.</p>
         </div>
       ) : posts.map(post => (
-        <div key={post.id} onClick={() => router.push(`/post/${post.id}`)} style={{ background:'#141414', border:'1px solid #2A2A2A', borderRadius:14, padding:'14px 18px', marginBottom:10, cursor:'pointer', transition:'border-color 0.2s' }}
+        <div key={post.id} onClick={() => router.push(`/post/${post.id}`)}
+          style={{ background:'#141414', border:'1px solid #2A2A2A', borderRadius:14, padding:'14px 18px', marginBottom:10, cursor:'pointer', transition:'border-color 0.2s' }}
           onMouseEnter={e => e.currentTarget.style.borderColor='#3A3A3A'}
           onMouseLeave={e => e.currentTarget.style.borderColor='#2A2A2A'}>
-          <p style={{ color:'#F0F0F0', fontSize:14, fontFamily:'Georgia,serif', lineHeight:1.55, marginBottom:8 }}>{post.content}</p>
-          {post.tags?.length > 0 && (
+          <RichText
+            content={post.content}
+            style={{ color:'#F0F0F0', fontSize:14, fontFamily:'Georgia,serif', lineHeight:1.55, display:'block', marginBottom:8 }}
+          />
+          {(post.tags?.length ?? 0) > 0 && (
             <div style={{ display:'flex', gap:6, marginBottom:8, flexWrap:'wrap' }}>
               {post.tags.map(tag => (
                 <span key={tag} onClick={e => { e.stopPropagation(); router.push(`/tag/${encodeURIComponent(tag.replace('#',''))}`) }}
