@@ -69,7 +69,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!loading && user) router.push('/feed')
-  }, [user, loading])
+  }, [user, loading, router])
 
   const tryDemo = async () => {
     setDemoLoading(true)
@@ -80,7 +80,11 @@ export default function Home() {
       setDemoStatus('Ready!')
       router.push('/feed')
     } catch (err: any) {
-      setDemoError(err?.message || err?.code || 'Demo unavailable. Please try again shortly.')
+      if (err?.code === 'auth/too-many-requests') {
+        setDemoError('Too many demo attempts. Please wait a minute and try again.')
+      } else {
+        setDemoError(err?.message || err?.code || 'Demo unavailable. Please try again shortly.')
+      }
       setDemoLoading(false)
       setDemoStatus('')
     }
