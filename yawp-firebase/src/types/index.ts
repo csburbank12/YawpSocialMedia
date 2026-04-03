@@ -5,6 +5,7 @@ export interface Profile {
   bio: string
   avatarUrl: string | null
   isPlus: boolean
+  isDemo?: boolean
   createdAt: number
 }
 
@@ -20,6 +21,7 @@ export interface Post {
   profile?: Profile
   hearted?: boolean
   echoed?: boolean
+  bookmarked?: boolean
 }
 
 export interface Reply {
