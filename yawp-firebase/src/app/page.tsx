@@ -2,25 +2,28 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { signInWithEmailAndPassword } from 'firebase/auth'
 import { useAuth } from '@/lib/AuthContext'
-import { auth } from '@/lib/firebase'
+import { launchDemo } from '@/lib/demoSeed'
 
 export default function Home() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [demoLoading, setDemoLoading] = useState(false)
+  const [demoStatus, setDemoStatus] = useState('')
   const [demoError, setDemoError] = useState('')
 
   const tryDemo = async () => {
     setDemoLoading(true)
     setDemoError('')
+    setDemoStatus('Checking demo account…')
     try {
-      await signInWithEmailAndPassword(auth, 'demo1@yawp.com', 'DemoYawp2024!')
+      await launchDemo()
+      setDemoStatus('Ready!')
       router.push('/feed')
     } catch {
-      setDemoError('Demo account unavailable. Try again shortly.')
+      setDemoError('Demo unavailable. Please try again shortly.')
       setDemoLoading(false)
+      setDemoStatus('')
     }
   }
 
@@ -88,7 +91,7 @@ export default function Home() {
           onMouseEnter={e => { if (!demoLoading) { (e.currentTarget as HTMLButtonElement).style.borderColor='#E8FF47'; (e.currentTarget as HTMLButtonElement).style.color='#E8FF47' }}}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#2A2A2A'; (e.currentTarget as HTMLButtonElement).style.color='#888' }}
         >
-          {demoLoading ? 'Loading demo...' : 'Try a demo account →'}
+          {demoLoading ? (demoStatus || 'Setting up demo…') : 'Try a demo account →'}
         </button>
         <p style={{ color:'#444', fontSize:12, marginTop:8, fontFamily:'Georgia,serif' }}>
           No sign-up needed. Explore Yawp as a real user.
