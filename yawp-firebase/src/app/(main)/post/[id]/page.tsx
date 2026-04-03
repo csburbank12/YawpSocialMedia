@@ -9,6 +9,7 @@ import Avatar from '@/components/ui/Avatar'
 import RichText from '@/components/ui/RichText'
 import QuoteCard from '@/components/ui/QuoteCard'
 import { formatDistanceToNow as fmtDistance } from 'date-fns'
+import { toMs } from '@/lib/utils'
 
 function parseMentions(text: string): string[] {
   const matches = text.match(/@([\w]+)/g) ?? []
@@ -197,7 +198,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
               <button onClick={() => router.push(`/profile/${username}`)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, color:'#F0F0F0', fontWeight:700, fontSize:14 }}>{post.profile?.displayName ?? username}</button>
               <button onClick={() => router.push(`/profile/${username}`)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, color:'#555', fontSize:12, fontFamily:"'DM Mono',monospace" }}>@{username}</button>
-              <span style={{ color:'#555', fontSize:12, marginLeft:'auto' }}>{fmtDistance(new Date(post.createdAt), { addSuffix:true })}</span>
+              <span style={{ color:'#555', fontSize:12, marginLeft:'auto' }}>{fmtDistance(new Date(toMs(post.createdAt)), { addSuffix:true })}</span>
               {post.editedAt && <span style={{ color:'#444', fontSize:11, fontFamily:"'DM Mono',monospace" }}>edited</span>}
             </div>
             <RichText
@@ -260,7 +261,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
                   <button onClick={() => router.push(`/profile/${ru}`)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, color:'#F0F0F0', fontWeight:600, fontSize:13 }}>{reply.profile?.displayName ?? ru}</button>
                   <button onClick={() => router.push(`/profile/${ru}`)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>@{ru}</button>
-                  <span style={{ color:'#555', fontSize:11, marginLeft:'auto' }}>{fmtDistance(new Date(reply.createdAt), { addSuffix:true })}</span>
+                  <span style={{ color:'#555', fontSize:11, marginLeft:'auto' }}>{fmtDistance(new Date(toMs(reply.createdAt)), { addSuffix:true })}</span>
                 </div>
                 <RichText
                   content={reply.content}

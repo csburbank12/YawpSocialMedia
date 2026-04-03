@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { collection, query, where, orderBy, getDocs, doc, getDoc, setDoc, deleteDoc, increment, updateDoc } from 'firebase/firestore'
 import { formatDistanceToNow } from 'date-fns'
+import { toMs } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
@@ -92,7 +93,7 @@ export default function TagPage({ params }: { params: { name: string } }) {
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
                   <button onClick={() => router.push(`/profile/${username}`)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, color:'#F0F0F0', fontWeight:700, fontSize:14 }}>{post.profile?.displayName ?? username}</button>
                   <span style={{ color:'#555', fontSize:12, fontFamily:"'DM Mono',monospace" }}>@{username}</span>
-                  <span style={{ color:'#555', fontSize:12, marginLeft:'auto' }}>{formatDistanceToNow(new Date(post.createdAt), { addSuffix:true })}</span>
+                  <span style={{ color:'#555', fontSize:12, marginLeft:'auto' }}>{formatDistanceToNow(new Date(toMs(post.createdAt)), { addSuffix:true })}</span>
                 </div>
                 <p onClick={() => router.push(`/post/${post.id}`)} style={{ color:'#F0F0F0', fontSize:15, lineHeight:1.6, margin:'0 0 12px', fontFamily:'Georgia,serif', wordBreak:'break-word', cursor:'pointer' }}>{post.content}</p>
                 <div style={{ display:'flex', gap:6, marginBottom:12, flexWrap:'wrap' }}>

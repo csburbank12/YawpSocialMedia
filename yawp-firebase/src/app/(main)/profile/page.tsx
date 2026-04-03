@@ -4,6 +4,7 @@ import { collection, query, where, orderBy, limit, getDocs, doc, updateDoc, dele
 import { signOut } from 'firebase/auth'
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
+import { toMs } from '@/lib/utils'
 import { db, auth } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
 import { Post } from '@/types'
@@ -24,7 +25,7 @@ function calculateStats(posts: Post[]): WritingStats {
 
   // Unique posting days (start of day timestamps)
   const todayMs = new Date().setHours(0, 0, 0, 0)
-  const days = new Set(posts.map(p => new Date(p.createdAt).setHours(0, 0, 0, 0)))
+  const days = new Set(posts.map(p => new Date(toMs(p.createdAt)).setHours(0, 0, 0, 0)))
   const sorted = Array.from(days).sort((a, b) => b - a) // newest first
 
   // Streak: start from today if posted today, else from yesterday
@@ -36,7 +37,7 @@ function calculateStats(posts: Post[]): WritingStats {
     else if (day < expected) break
   }
 
-  const oldest = Math.min(...posts.map(p => p.createdAt))
+  const oldest = Math.min(...posts.map(p => toMs(p.createdAt)))
   const firstPostDaysAgo = Math.floor((Date.now() - oldest) / 86_400_000)
 
   return { totalPosts: posts.length, totalWords, streak, firstPostDaysAgo }
@@ -231,7 +232,7 @@ export default function ProfilePage() {
           }}>
           <RichText content={post.content} style={{ color:'#F0F0F0', fontSize:14, fontFamily:'Georgia,serif', lineHeight:1.55, display:'block', marginBottom:8 }} />
           <div style={{ display:'flex', alignItems:'center', gap:16 }}>
-            <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>{formatDistanceToNow(new Date(post.createdAt), { addSuffix:true })}</span>
+            <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>{formatDistanceToNow(new Date(toMs(post.createdAt)), { addSuffix:true })}</span>
             <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>♥ {post.heartCount}</span>
             <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>◎ {post.replyCount}</span>
             {post.editedAt && <span style={{ color:'#444', fontSize:10, fontFamily:"'DM Mono',monospace" }}>edited</span>}

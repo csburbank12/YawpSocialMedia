@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { collection, query, where, orderBy, onSnapshot, addDoc, doc, getDoc, getDocs, setDoc, or } from 'firebase/firestore'
 import { formatDistanceToNow } from 'date-fns'
+import { toMs } from '@/lib/utils'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
 import { Conversation, DirectMessage, Profile } from '@/types'
@@ -105,7 +106,7 @@ export default function MessagesPage() {
                   {m.content}
                 </div>
                 <div style={{ color:'#555', fontSize:10, marginTop:3, textAlign: isMe ? 'right' : 'left', fontFamily:"'DM Mono',monospace" }}>
-                  {formatDistanceToNow(new Date(m.createdAt), { addSuffix:true })}
+                  {formatDistanceToNow(new Date(toMs(m.createdAt)), { addSuffix:true })}
                 </div>
               </div>
             </div>
@@ -174,7 +175,7 @@ export default function MessagesPage() {
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:3 }}>
                 <span style={{ color:'#F0F0F0', fontWeight:600, fontSize:14 }}>{other.displayName ?? other.username}</span>
-                <span style={{ color:'#555', fontSize:11 }}>{conv.lastMessageAt ? formatDistanceToNow(new Date(conv.lastMessageAt), { addSuffix:true }) : ''}</span>
+                <span style={{ color:'#555', fontSize:11 }}>{conv.lastMessageAt ? formatDistanceToNow(new Date(toMs(conv.lastMessageAt)), { addSuffix:true }) : ''}</span>
               </div>
               <div style={{ color:'#555', fontSize:13, fontFamily:'Georgia,serif', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{conv.lastMessage || 'No messages yet'}</div>
             </div>

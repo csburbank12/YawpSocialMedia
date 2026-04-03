@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { collection, getDocs, doc, getDoc, deleteDoc } from 'firebase/firestore'
 import { formatDistanceToNow } from 'date-fns'
+import { toMs } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
@@ -75,7 +76,7 @@ export default function BookmarksPage() {
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
                   <span style={{ color:'#F0F0F0', fontWeight:700, fontSize:14 }}>{post.profile?.displayName ?? username}</span>
                   <span style={{ color:'#555', fontSize:12, fontFamily:"'DM Mono',monospace" }}>@{username}</span>
-                  <span style={{ color:'#555', fontSize:12, marginLeft:'auto' }}>{formatDistanceToNow(new Date(post.createdAt), { addSuffix:true })}</span>
+                  <span style={{ color:'#555', fontSize:12, marginLeft:'auto' }}>{formatDistanceToNow(new Date(toMs(post.createdAt)), { addSuffix:true })}</span>
                 </div>
                 <p style={{ color:'#F0F0F0', fontSize:15, lineHeight:1.6, margin:'0 0 10px', fontFamily:'Georgia,serif', wordBreak:'break-word' }}>{post.content}</p>
                 {post.tags?.length > 0 && (

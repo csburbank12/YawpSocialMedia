@@ -4,6 +4,7 @@ import { Post } from '@/types'
 import Avatar from './Avatar'
 import RichText from './RichText'
 import { formatDistanceToNow } from 'date-fns'
+import { toMs } from '@/lib/utils'
 
 interface Props {
   post: Post
@@ -42,7 +43,7 @@ export default function QuoteCard({ post }: Props) {
         </span>
         <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>@{username}</span>
         <span style={{ color:'#444', fontSize:11, marginLeft:'auto' }}>
-          {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+          {formatDistanceToNow(new Date(toMs(post.createdAt)), { addSuffix: true })}
         </span>
       </div>
       <RichText

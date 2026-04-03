@@ -6,6 +6,7 @@ import {
   increment, updateDoc, where,
 } from 'firebase/firestore'
 import { formatDistanceToNow } from 'date-fns'
+import { toMs } from '@/lib/utils'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
 import { Post } from '@/types'
@@ -336,7 +337,7 @@ function PostCard({
   const [hovered, setHovered] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const username = post.profile?.username ?? 'unknown'
-  const timeAgo = formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })
+  const timeAgo = formatDistanceToNow(new Date(toMs(post.createdAt)), { addSuffix: true })
   const isOwner = post.userId === currentUserId
   const words = wordCount(post.content)
   const readTime = words >= 50 ? `${Math.ceil(words / 200)} min read` : null

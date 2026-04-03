@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { collection, query, orderBy, getDocs, writeBatch, doc } from 'firebase/firestore'
 import { formatDistanceToNow } from 'date-fns'
+import { toMs } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
@@ -113,7 +114,7 @@ export default function NotificationsPage() {
               <Avatar username={item.fromUsername} size={22} />
               <span style={{ color:'#F0F0F0', fontWeight:600, fontSize:13 }}>{item.fromDisplayName}</span>
               <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>@{item.fromUsername}</span>
-              <span style={{ color:'#555', fontSize:11, marginLeft:'auto', flexShrink:0 }}>{formatDistanceToNow(new Date(item.createdAt), { addSuffix:true })}</span>
+              <span style={{ color:'#555', fontSize:11, marginLeft:'auto', flexShrink:0 }}>{formatDistanceToNow(new Date(toMs(item.createdAt)), { addSuffix:true })}</span>
             </div>
             <p style={{ color:'#888', fontSize:13, fontFamily:'Georgia,serif', margin:0 }}>
               {TYPE_LABEL[item.type]}
