@@ -3,42 +3,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demo Setup</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <title>Yawp – Demo Account Setup & Access Check</title>
+    <style>
+        body { font-family: 'DM Mono', monospace, sans-serif; background: #0D0D0D; color: #F0F0F0; max-width: 680px; margin: 40px auto; padding: 0 20px; }
+        h1 { color: #E8FF47; font-size: 22px; margin-bottom: 4px; }
+        p.sub { color: #666; font-size: 13px; margin-bottom: 28px; }
+        .card { background: #141414; border: 1px solid #2A2A2A; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .card h2 { font-size: 14px; color: #888; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .user-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #1E1E1E; }
+        .user-row:last-child { border-bottom: none; }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; background: #2A2A2A; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+        .user-info { flex: 1; }
+        .user-info .name { font-size: 14px; font-weight: 600; }
+        .user-info .email { font-size: 12px; color: #666; }
+        .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .badge.pending { background: #2A2A2A; color: #666; }
+        .badge.ok { background: #1A3A1A; color: #4ADE80; }
+        .badge.error { background: #3A1A1A; color: #FF6B6B; }
+        .badge.warn { background: #3A2E0A; color: #E8FF47; }
+        .btn { background: #E8FF47; color: #0D0D0D; border: none; border-radius: 8px; padding: 10px 22px; font-size: 14px; font-weight: 700; cursor: pointer; margin-right: 8px; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn.secondary { background: #1E1E1E; color: #F0F0F0; border: 1px solid #2A2A2A; }
+        .log { background: #0A0A0A; border: 1px solid #1E1E1E; border-radius: 8px; padding: 14px; font-size: 12px; color: #888; max-height: 200px; overflow-y: auto; white-space: pre-wrap; margin-top: 16px; }
+        .log .ok { color: #4ADE80; }
+        .log .err { color: #FF6B6B; }
+        .log .info { color: #60A5FA; }
+        .actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+        .section-title { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 8px; }
+    </style>
 </head>
 <body>
-    <h1>Demo Account Setup</h1>
+    <h1>YAWP — Demo Account Check</h1>
+    <p class="sub">Verify demo accounts exist in Firebase Auth and Firestore, or create them from scratch.</p>
+
+    <div class="card">
+        <h2>Demo Accounts</h2>
+        <div id="user-list"></div>
+    </div>
+
+    <div class="card">
+        <h2>Actions</h2>
+        <div class="actions">
+            <button class="btn" id="btn-check" onclick="runCheck()">Check Access</button>
+            <button class="btn secondary" id="btn-create" onclick="runSetup()">Create / Reset Accounts</button>
+        </div>
+        <div class="log" id="log">Ready. Click "Check Access" to verify demo accounts, or "Create / Reset Accounts" to seed them.\n</div>
+    </div>
+
+    <!-- Firebase v9 compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
     <script>
-        // TODO: Replace these with your app's Firebase project configuration
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyAVjZiW2V6ejXRLeNJ7s0qG-tuOWMA-HYQ",
+            authDomain: "yawpsocial-372ed.firebaseapp.com",
+            databaseURL: "https://yawpsocial-372ed-default-rtdb.firebaseio.com",
+            projectId: "yawpsocial-372ed",
+            storageBucket: "yawpsocial-372ed.firebasestorage.app",
+            messagingSenderId: "338138975898",
+            appId: "1:338138975898:web:8fc30cbb7a83413c671923"
         };
 
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore(app);
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-        // Function to create demo accounts
-        async function createDemoAccounts() {
-            const demoUsers = [
-                { username: 'demoUser1', email: 'demo1@example.com' },
-                { username: 'demoUser2', email: 'demo2@example.com' }
-            ];
+        const DEMO_USERS = [
+            { name: 'Alex Rivera',    email: 'demo1@yawp.com', password: 'DemoYawp2024!', username: 'alex_rivera',  avatar: '🧑' },
+            { name: 'Jordan Chen',    email: 'demo2@yawp.com', password: 'DemoYawp2024!', username: 'jordan_chen',  avatar: '👩' },
+            { name: 'Taylor Morgan',  email: 'demo3@yawp.com', password: 'DemoYawp2024!', username: 'taylor_morgan', avatar: '🧔' },
+        ];
 
-            for (const user of demoUsers) {
-                await db.collection('users').add(user);
-                console.log(`Created account for: ${user.username}`);
+        // Render initial user list
+        const list = document.getElementById('user-list');
+        DEMO_USERS.forEach((u, i) => {
+            list.innerHTML += `
+                <div class="user-row" id="row-${i}">
+                    <div class="avatar">${u.avatar}</div>
+                    <div class="user-info">
+                        <div class="name">${u.name}</div>
+                        <div class="email">${u.email}</div>
+                    </div>
+                    <span class="badge pending" id="auth-badge-${i}">Auth: –</span>
+                    <span class="badge pending" id="db-badge-${i}">DB: –</span>
+                </div>`;
+        });
+
+        function log(msg, type = '') {
+            const el = document.getElementById('log');
+            const cls = type ? ` class="${type}"` : '';
+            el.innerHTML += `<span${cls}>${msg}</span>\n`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function setBadge(id, text, state) {
+            const el = document.getElementById(id);
+            el.textContent = text;
+            el.className = `badge ${state}`;
+        }
+
+        function setButtons(disabled) {
+            document.getElementById('btn-check').disabled = disabled;
+            document.getElementById('btn-create').disabled = disabled;
+        }
+
+        async function checkUser(user, i) {
+            // 1. Check Auth by signing in
+            try {
+                const cred = await auth.signInWithEmailAndPassword(user.email, user.password);
+                setBadge(`auth-badge-${i}`, 'Auth: OK', 'ok');
+                log(`  [${user.name}] Auth sign-in OK (uid: ${cred.user.uid})`, 'ok');
+
+                // 2. Check Firestore profile doc
+                const uid = cred.user.uid;
+                const doc = await db.collection('users').doc(uid).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    setBadge(`db-badge-${i}`, 'DB: OK', 'ok');
+                    log(`  [${user.name}] Firestore profile found (isPlus: ${data.isPlus ?? false})`, 'ok');
+                } else {
+                    setBadge(`db-badge-${i}`, 'DB: missing', 'warn');
+                    log(`  [${user.name}] Firestore profile doc not found — run "Create / Reset Accounts" to seed it`, 'err');
+                }
+
+                await auth.signOut();
+            } catch (err) {
+                setBadge(`auth-badge-${i}`, 'Auth: fail', 'error');
+                setBadge(`db-badge-${i}`, 'DB: –', 'pending');
+                log(`  [${user.name}] Auth failed: ${err.message}`, 'err');
             }
         }
 
-        // Seed Firestore with demo data
-        createDemoAccounts();
+        async function runCheck() {
+            setButtons(true);
+            document.getElementById('log').innerHTML = '';
+            log('Running access check...', 'info');
+            for (let i = 0; i < DEMO_USERS.length; i++) {
+                DEMO_USERS[i];
+                setBadge(`auth-badge-${i}`, 'Auth: …', 'pending');
+                setBadge(`db-badge-${i}`, 'DB: …', 'pending');
+                await checkUser(DEMO_USERS[i], i);
+            }
+            log('\nCheck complete.', 'info');
+            setButtons(false);
+        }
+
+        async function createUser(user, i) {
+            let uid;
+            // Try to create in Auth; if already exists, sign in to get uid
+            try {
+                const cred = await auth.createUserWithEmailAndPassword(user.email, user.password);
+                uid = cred.user.uid;
+                log(`  [${user.name}] Auth account created`, 'ok');
+                setBadge(`auth-badge-${i}`, 'Auth: OK', 'ok');
+            } catch (err) {
+                if (err.code === 'auth/email-already-in-use') {
+                    log(`  [${user.name}] Auth account already exists, signing in...`, 'info');
+                    try {
+                        const cred = await auth.signInWithEmailAndPassword(user.email, user.password);
+                        uid = cred.user.uid;
+                        setBadge(`auth-badge-${i}`, 'Auth: OK', 'ok');
+                    } catch (e2) {
+                        log(`  [${user.name}] Could not sign in: ${e2.message}`, 'err');
+                        setBadge(`auth-badge-${i}`, 'Auth: fail', 'error');
+                        return;
+                    }
+                } else {
+                    log(`  [${user.name}] Auth error: ${err.message}`, 'err');
+                    setBadge(`auth-badge-${i}`, 'Auth: fail', 'error');
+                    return;
+                }
+            }
+
+            // Write/overwrite Firestore profile
+            try {
+                await db.collection('users').doc(uid).set({
+                    uid,
+                    name: user.name,
+                    username: user.username,
+                    email: user.email,
+                    avatarUrl: null,
+                    bio: 'Demo account',
+                    isPlus: false,
+                    createdAt: Date.now(),
+                    isDemo: true,
+                });
+                setBadge(`db-badge-${i}`, 'DB: OK', 'ok');
+                log(`  [${user.name}] Firestore profile written`, 'ok');
+            } catch (err) {
+                setBadge(`db-badge-${i}`, 'DB: fail', 'error');
+                log(`  [${user.name}] Firestore write error: ${err.message}`, 'err');
+            }
+
+            await auth.signOut();
+        }
+
+        async function runSetup() {
+            setButtons(true);
+            document.getElementById('log').innerHTML = '';
+            log('Creating / resetting demo accounts...', 'info');
+            for (let i = 0; i < DEMO_USERS.length; i++) {
+                setBadge(`auth-badge-${i}`, 'Auth: …', 'pending');
+                setBadge(`db-badge-${i}`, 'DB: …', 'pending');
+                await createUser(DEMO_USERS[i], i);
+            }
+            log('\nSetup complete. Run "Check Access" to verify.', 'info');
+            setButtons(false);
+        }
     </script>
 </body>
 </html>
