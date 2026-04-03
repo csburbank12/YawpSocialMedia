@@ -79,7 +79,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
     if (!user || !profile) return
     const muteRef = doc(db, 'profiles', user.uid, 'muted', profile.id)
     if (isMuted) {
-      await deleteDoc(muteRef)
+      try { await deleteDoc(muteRef) } catch { /* rules may not cover muted subcollection yet */ }
       setIsMuted(false)
     } else {
       // Muting also unfollows
@@ -88,7 +88,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
         await deleteDoc(doc(db, 'profiles', profile.id, 'followers', user.uid))
         setIsFollowing(false)
       }
-      await setDoc(muteRef, { mutedAt: Date.now() })
+      try { await setDoc(muteRef, { mutedAt: Date.now() }) } catch { /* rules may not cover muted subcollection yet */ }
       setIsMuted(true)
     }
   }

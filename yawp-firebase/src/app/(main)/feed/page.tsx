@@ -23,7 +23,8 @@ function parseMentions(text: string): string[] {
 }
 
 /** Words in a string */
-function wordCount(text: string): number {
+function wordCount(text: string | undefined): number {
+  if (!text) return 0
   return text.trim().split(/\s+/).filter(Boolean).length
 }
 
@@ -60,12 +61,13 @@ export default function FeedPage() {
     }
   }, [content])
 
-  // Load muted users
+  // Load muted users — wrapped in try/catch since this is a new subcollection
+  // that may not be covered by existing Firestore rules on first deploy
   useEffect(() => {
     if (!user) return
-    getDocs(collection(db, 'profiles', user.uid, 'muted')).then(snap => {
-      setMutedIds(new Set(snap.docs.map(d => d.id)))
-    })
+    getDocs(collection(db, 'profiles', user.uid, 'muted'))
+      .then(snap => setMutedIds(new Set(snap.docs.map(d => d.id))))
+      .catch(() => { /* muted subcollection not yet accessible — silently skip */ })
   }, [user])
 
   // Subscribe to feed
@@ -212,8 +214,13 @@ export default function FeedPage() {
 
   const handleMute = async (targetUserId: string) => {
     if (!user) return
-    const muteRef = doc(db, 'profiles', user.uid, 'muted', targetUserId)
-    await setDoc(muteRef, { mutedAt: Date.now() })
+    try {
+      const muteRef = doc(db, 'profiles', user.uid, 'muted', targetUserId)
+      await setDoc(muteRef, { mutedAt: Date.now() })
+    } catch {
+      // Firestore write may fail if rules don't yet cover the muted subcollection
+    }
+    // Update local state regardless so the UI hides the post immediately
     setMutedIds(prev => new Set([...prev, targetUserId]))
   }
 

@@ -12,6 +12,8 @@ interface Props {
 export default function RichText({ content, style }: Props) {
   const router = useRouter()
 
+  if (!content) return <span style={style} />
+
   // Split on @mentions and #hashtags, keeping the delimiters
   const parts = content.split(/((?:^|\s)@[\w]+|(?:^|\s)#[\w]+)/g)
 

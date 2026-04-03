@@ -46,7 +46,7 @@ export default function QuoteCard({ post }: Props) {
         </span>
       </div>
       <RichText
-        content={post.content.length > 200 ? post.content.slice(0, 200) + '…' : post.content}
+        content={post.content ? (post.content.length > 200 ? post.content.slice(0, 200) + '…' : post.content) : ''}
         style={{ color:'#AAA', fontSize:13, fontFamily:'Georgia,serif', lineHeight:1.55 }}
       />
     </div>
