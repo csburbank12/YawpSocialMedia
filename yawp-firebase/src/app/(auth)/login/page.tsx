@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
+import { launchDemo } from '@/lib/demoSeed'
 import Link from 'next/link'
 
 const S: Record<string, React.CSSProperties> = {
@@ -20,6 +21,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
+  const [demoStatus, setDemoStatus] = useState('')
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,6 +35,18 @@ export default function LoginPage() {
       setError('Invalid email or password. Please try again.')
     }
     setLoading(false)
+  }
+
+  const tryDemo = async () => {
+    setDemoLoading(true)
+    setDemoStatus('Setting up demo…')
+    try {
+      await launchDemo()
+      router.push('/feed')
+    } catch {
+      setDemoStatus('Demo unavailable — try again shortly.')
+      setDemoLoading(false)
+    }
   }
 
   return (
@@ -51,6 +66,19 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <div style={{ display:'flex', alignItems:'center', gap:10, margin:'24px 0' }}>
+          <div style={{ flex:1, height:1, background:'#1E1E1E' }} />
+          <span style={{ color:'#555', fontSize:12, fontFamily:"'DM Mono',monospace" }}>or</span>
+          <div style={{ flex:1, height:1, background:'#1E1E1E' }} />
+        </div>
+
+        <button onClick={tryDemo} disabled={demoLoading} style={{ width:'100%', background:'#141414', border:'1px solid #3A3A3A', borderRadius:10, padding:13, color: demoLoading ? '#666' : '#AAA', fontWeight:600, fontSize:14, cursor: demoLoading ? 'default' : 'pointer', fontFamily:"'DM Mono',monospace", transition:'all 0.2s' }}
+          onMouseEnter={e => { if (!demoLoading) { const b = e.currentTarget; b.style.borderColor='#E8FF47'; b.style.color='#E8FF47' }}}
+          onMouseLeave={e => { const b = e.currentTarget; b.style.borderColor='#3A3A3A'; b.style.color='#AAA' }}>
+          {demoLoading ? demoStatus : '▶ Try a demo account — no sign-up needed'}
+        </button>
+
         <p style={{ textAlign:'center', color:'#555', fontSize:13, marginTop:20 }}>
           New to Yawp?{' '}
           <Link href="/signup" style={{ color:'#E8FF47' }}>Create an account</Link>
