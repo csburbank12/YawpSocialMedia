@@ -1,32 +1,31 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy, limit, where } from 'firebase/firestore'
+import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy, limit } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
-import { Profile, Post } from '@/types'
+import { Profile } from '@/types'
 import Avatar from '@/components/ui/Avatar'
 
 const TAG_COLORS = ['#E8FF47','#47FFB2','#7C4DFF','#FF6B6B','#00BCD4','#FF9800','#FF4081','#69F0AE']
 
 export default function DiscoverPage() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [people, setPeople] = useState<Profile[]>([])
   const [trending, setTrending] = useState<{ tag: string; count: number }[]>([])
   const [followed, setFollowed] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user) return
     const load = async () => {
-      // Get all profiles except current user
+      setLoading(true)
       const snap = await getDocs(collection(db, 'profiles'))
       setPeople(snap.docs.filter(d => d.id !== user.uid).map(d => ({ id: d.id, ...d.data() } as Profile)))
 
-      // Get following
       const followSnap = await getDocs(collection(db, 'profiles', user.uid, 'following'))
       setFollowed(new Set(followSnap.docs.map(d => d.id)))
 
-      // Get trending tags from recent posts
       const postsSnap = await getDocs(query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100)))
       const tagCounts: Record<string, number> = {}
       postsSnap.docs.forEach(d => {
@@ -34,39 +33,60 @@ export default function DiscoverPage() {
         tags.forEach((tag: string) => { tagCounts[tag] = (tagCounts[tag] ?? 0) + 1 })
       })
       setTrending(Object.entries(tagCounts).sort(([,a],[,b]) => b - a).slice(0, 6).map(([tag, count]) => ({ tag, count })))
+      setLoading(false)
     }
     load()
   }, [user])
 
-  const toggleFollow = async (profileId: string) => {
-    if (!user) return
-    const ref = doc(db, 'profiles', user.uid, 'following', profileId)
-    if (followed.has(profileId)) {
-      await deleteDoc(ref)
-      setFollowed(prev => { const s = new Set(prev); s.delete(profileId); return s })
+  const toggleFollow = async (targetProfile: Profile) => {
+    if (!user || !profile) return
+    const myFollowRef = doc(db, 'profiles', user.uid, 'following', targetProfile.id)
+    const theirFollowerRef = doc(db, 'profiles', targetProfile.id, 'followers', user.uid)
+
+    if (followed.has(targetProfile.id)) {
+      await deleteDoc(myFollowRef)
+      await deleteDoc(theirFollowerRef)
+      setFollowed(prev => { const s = new Set(prev); s.delete(targetProfile.id); return s })
     } else {
-      await setDoc(ref, { followedAt: Date.now() })
-      setFollowed(prev => new Set([...prev, profileId]))
+      const now = Date.now()
+      await setDoc(myFollowRef, { followedAt: now })
+      await setDoc(theirFollowerRef, { followedAt: now })
+      // Write a follow notification to the target user
+      await setDoc(doc(db, 'notifications', targetProfile.id, 'items', `follow_${user.uid}`), {
+        type: 'follow',
+        fromUserId: user.uid,
+        fromUsername: profile.username,
+        fromDisplayName: profile.displayName,
+        createdAt: now,
+        read: false,
+      })
+      setFollowed(prev => new Set([...prev, targetProfile.id]))
     }
   }
 
   const filtered = search.length >= 2
-    ? people.filter(p => p.username.toLowerCase().includes(search.toLowerCase()) || (p.displayName ?? '').toLowerCase().includes(search.toLowerCase()))
+    ? people.filter(p =>
+        p.username.toLowerCase().includes(search.toLowerCase()) ||
+        (p.displayName ?? '').toLowerCase().includes(search.toLowerCase())
+      )
     : people
 
   return (
     <div style={{ maxWidth:640, margin:'0 auto', padding:'24px 16px' }}>
       <div style={{ marginBottom:24 }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search people..."
-          style={{ width:'100%', background:'#141414', border:'1px solid #2A2A2A', borderRadius:20, padding:'11px 18px', color:'#F0F0F0', fontSize:14, outline:'none' }} />
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Search people..."
+          style={{ width:'100%', background:'#141414', border:'1px solid #2A2A2A', borderRadius:20, padding:'11px 18px', color:'#F0F0F0', fontSize:14, outline:'none' }}
+        />
       </div>
 
       {!search && trending.length > 0 && (
         <div style={{ marginBottom:28 }}>
           <div style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace", letterSpacing:'0.1em', marginBottom:12 }}>TRENDING TODAY</div>
           {trending.map(({ tag, count }, i) => (
-            <div key={tag} style={{ background:'#141414', border:'1px solid #2A2A2A', borderRadius:12, padding:'12px 16px', marginBottom:8, display:'flex', alignItems:'center', gap:12, cursor:'pointer' }}>
-              <div style={{ width:6, height:6, borderRadius:'50%', background:TAG_COLORS[i % TAG_COLORS.length] }} />
+            <div key={tag} style={{ background:'#141414', border:'1px solid #2A2A2A', borderRadius:12, padding:'12px 16px', marginBottom:8, display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ width:6, height:6, borderRadius:'50%', background:TAG_COLORS[i % TAG_COLORS.length], flexShrink:0 }} />
               <span style={{ color:TAG_COLORS[i % TAG_COLORS.length], fontWeight:700, fontSize:14, fontFamily:"'DM Mono',monospace", flex:1 }}>{tag}</span>
               <span style={{ color:'#555', fontSize:12 }}>{count} yawps</span>
             </div>
@@ -78,8 +98,13 @@ export default function DiscoverPage() {
         {search.length >= 2 ? 'SEARCH RESULTS' : 'PEOPLE ON YAWP'}
       </div>
 
-      {filtered.length === 0 ? (
-        <p style={{ color:'#555', fontSize:13, textAlign:'center', padding:20 }}>No users found.</p>
+      {loading ? (
+        <div style={{ color:'#555', fontSize:13, textAlign:'center', padding:20 }}>Loading...</div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign:'center', color:'#555', padding:'40px 20px' }}>
+          <p style={{ fontFamily:'Georgia,serif', fontSize:15, color:'#888', marginBottom:4 }}>No one found.</p>
+          {search.length >= 2 && <p style={{ fontSize:13 }}>Try a different search.</p>}
+        </div>
       ) : filtered.map(p => (
         <div key={p.id} style={{ background:'#141414', border:'1px solid #2A2A2A', borderRadius:12, padding:'14px 16px', marginBottom:10, display:'flex', alignItems:'center', gap:12 }}>
           <Avatar username={p.username} size={40} />
@@ -88,12 +113,15 @@ export default function DiscoverPage() {
             <div style={{ color:'#555', fontSize:12, fontFamily:"'DM Mono',monospace" }}>@{p.username}</div>
             {p.bio && <div style={{ color:'#888', fontSize:12, marginTop:2, fontFamily:'Georgia,serif', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.bio}</div>}
           </div>
-          <button onClick={() => toggleFollow(p.id)} style={{
-            background: followed.has(p.id) ? '#1A1A1A' : 'none',
-            border:`1px solid ${followed.has(p.id) ? '#3A3A3A' : '#2A2A2A'}`,
-            borderRadius:20, color: followed.has(p.id) ? '#888' : '#F0F0F0',
-            padding:'6px 14px', cursor:'pointer', fontSize:12, flexShrink:0, transition:'all 0.15s'
-          }}>
+          <button
+            onClick={() => toggleFollow(p)}
+            style={{
+              background: followed.has(p.id) ? '#1A1A1A' : 'none',
+              border:`1px solid ${followed.has(p.id) ? '#3A3A3A' : '#E8FF47'}`,
+              borderRadius:20, color: followed.has(p.id) ? '#555' : '#E8FF47',
+              padding:'6px 14px', cursor:'pointer', fontSize:12, flexShrink:0, transition:'all 0.15s',
+              fontFamily:"'DM Mono',monospace", fontWeight:600,
+            }}>
             {followed.has(p.id) ? 'Following' : 'Follow'}
           </button>
         </div>
