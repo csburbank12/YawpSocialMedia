@@ -108,7 +108,7 @@ export default function Home() {
       <section style={{ maxWidth:720, margin:'0 auto', padding:'96px 24px 80px', textAlign:'center' }}>
         <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#141414', border:'1px solid #2A2A2A', borderRadius:20, padding:'6px 14px', marginBottom:32, fontSize:12, color:'#888', fontFamily:"'DM Mono',monospace" }}>
           <span style={{ width:6, height:6, borderRadius:'50%', background:'#47FFB2', display:'inline-block' }} />
-          No algorithm. No ads. No nonsense.
+          No algorithm. No noise. No nonsense.
         </div>
 
         <h1 style={{ fontSize:'clamp(36px,6vw,64px)', fontWeight:700, lineHeight:1.1, marginBottom:24, fontFamily:'Georgia,serif', letterSpacing:'-0.02em', minHeight:'1.1em' }}>
@@ -218,7 +218,7 @@ export default function Home() {
           <div style={{ background:'#E8FF47', color:'#0D0D0D', fontFamily:"'DM Mono',monospace", fontWeight:700, fontSize:20, padding:'8px 18px', borderRadius:8, display:'inline-block', marginBottom:24 }}>YAWP</div>
           <h2 style={{ fontSize:'clamp(24px,4vw,36px)', fontWeight:700, fontFamily:'Georgia,serif', marginBottom:16, lineHeight:1.3 }}>Ready to say something?</h2>
           <p style={{ color:'#888', fontSize:16, fontFamily:'Georgia,serif', lineHeight:1.7, marginBottom:40 }}>
-            No algorithm will decide if you&apos;re worth hearing. No ad will interrupt you. Just your words, and the people who want to read them.
+            No algorithm will decide if you&apos;re worth hearing. Just your words, and the people who want to read them.
           </p>
           <Link href="/signup" style={{ background:'#E8FF47', color:'#0D0D0D', fontWeight:700, padding:'15px 40px', borderRadius:30, fontSize:16, display:'inline-block' }}>
             Create your account →
@@ -226,6 +226,13 @@ export default function Home() {
           <p style={{ color:'#333', fontSize:12, marginTop:16, fontFamily:"'DM Mono',monospace" }}>Free forever. No credit card required.</p>
         </div>
       </section>
+
+      {/* ── Footer ── */}
+      <footer style={{ borderTop:'1px solid #1A1A1A', padding:'24px', textAlign:'center' }}>
+        <p style={{ color:'#333', fontSize:11, fontFamily:"'DM Mono',monospace" }}>
+          &copy; {new Date().getFullYear()} Yawp Social Media. All rights reserved.
+        </p>
+      </footer>
 
       <style>{`
         @keyframes blink { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }

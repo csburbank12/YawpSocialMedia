@@ -157,6 +157,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <NavBar unreadNotifs={unreadNotifs} unreadMsgs={unreadMsgs} />
       {isDemo && <DemoBanner />}
       <main style={{ paddingBottom:80 }}>{children}</main>
+      <footer style={{ borderTop:'1px solid #1A1A1A', padding:'16px 24px', textAlign:'center', marginBottom:60 }}>
+        <p style={{ color:'#2A2A2A', fontSize:10, fontFamily:"'DM Mono',monospace", margin:0 }}>
+          &copy; {new Date().getFullYear()} Yawp Social Media. All rights reserved.
+        </p>
+      </footer>
     </div>
   )
 }
