@@ -79,8 +79,8 @@ export default function Home() {
       await launchDemo()
       setDemoStatus('Ready!')
       router.push('/feed')
-    } catch {
-      setDemoError('Demo unavailable. Please try again shortly.')
+    } catch (err: any) {
+      setDemoError(err?.message || err?.code || 'Demo unavailable. Please try again shortly.')
       setDemoLoading(false)
       setDemoStatus('')
     }

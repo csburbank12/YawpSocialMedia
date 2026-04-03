@@ -43,8 +43,8 @@ export default function LoginPage() {
     try {
       await launchDemo()
       router.push('/feed')
-    } catch {
-      setDemoStatus('Demo unavailable — try again shortly.')
+    } catch (err: any) {
+      setDemoStatus(err?.message || err?.code || 'Demo unavailable — try again shortly.')
       setDemoLoading(false)
     }
   }
