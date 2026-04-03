@@ -122,7 +122,7 @@ export default function Home() {
 
         <div style={{ display:'flex', gap:12, flexWrap:'wrap', justifyContent:'center', marginBottom:24 }}>
           <Link href="/signup" style={{ background:'#E8FF47', color:'#0D0D0D', fontWeight:700, padding:'14px 32px', borderRadius:28, fontSize:16, display:'inline-block' }}>
-            Join Yawp — it's free
+            Join Yawp — it&apos;s free
           </Link>
           <Link href="/login" style={{ background:'none', color:'#F0F0F0', fontWeight:600, padding:'14px 32px', borderRadius:28, fontSize:16, border:'1px solid #2A2A2A', display:'inline-block' }}>
             Sign in
@@ -177,13 +177,13 @@ export default function Home() {
         <div style={{ maxWidth:620, margin:'0 auto', textAlign:'center' }}>
           <p style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace", letterSpacing:'0.12em', marginBottom:32 }}>WHY WE BUILT THIS</p>
           <p style={{ fontFamily:'Georgia,serif', fontSize:'clamp(20px,3vw,28px)', lineHeight:1.7, color:'#F0F0F0', marginBottom:28, fontStyle:'italic' }}>
-            "The timeline used to feel like a conversation. Then it started feeling like a performance. Then it started feeling like a trap."
+            &quot;The timeline used to feel like a conversation. Then it started feeling like a performance. Then it started feeling like a trap.&quot;
           </p>
           <p style={{ color:'#888', fontSize:16, fontFamily:'Georgia,serif', lineHeight:1.8, marginBottom:16 }}>
             We built Yawp because we missed the internet that felt like discovery. The one where you said something and someone thought about it before responding.
           </p>
           <p style={{ color:'#888', fontSize:16, fontFamily:'Georgia,serif', lineHeight:1.8 }}>
-            The algorithm didn't make us worse. It made us forget we were better. Yawp is the reminder.
+            The algorithm didn&apos;t make us worse. It made us forget we were better. Yawp is the reminder.
           </p>
         </div>
       </section>
@@ -218,7 +218,7 @@ export default function Home() {
           <div style={{ background:'#E8FF47', color:'#0D0D0D', fontFamily:"'DM Mono',monospace", fontWeight:700, fontSize:20, padding:'8px 18px', borderRadius:8, display:'inline-block', marginBottom:24 }}>YAWP</div>
           <h2 style={{ fontSize:'clamp(24px,4vw,36px)', fontWeight:700, fontFamily:'Georgia,serif', marginBottom:16, lineHeight:1.3 }}>Ready to say something?</h2>
           <p style={{ color:'#888', fontSize:16, fontFamily:'Georgia,serif', lineHeight:1.7, marginBottom:40 }}>
-            No algorithm will decide if you're worth hearing. No ad will interrupt you. Just your words, and the people who want to read them.
+            No algorithm will decide if you&apos;re worth hearing. No ad will interrupt you. Just your words, and the people who want to read them.
           </p>
           <Link href="/signup" style={{ background:'#E8FF47', color:'#0D0D0D', fontWeight:700, padding:'15px 40px', borderRadius:30, fontSize:16, display:'inline-block' }}>
             Create your account →

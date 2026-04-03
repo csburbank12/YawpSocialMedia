@@ -144,7 +144,7 @@ export default function ProfilePage() {
       {posts.length === 0 ? (
         <div style={{ textAlign:'center', color:'#555', padding:'40px 20px' }}>
           <p style={{ fontSize:28, marginBottom:12 }}>⬡</p>
-          <p style={{ fontFamily:'Georgia,serif', fontSize:15, color:'#888', marginBottom:8 }}>You haven't yawped yet.</p>
+          <p style={{ fontFamily:'Georgia,serif', fontSize:15, color:'#888', marginBottom:8 }}>You haven&apos;t yawped yet.</p>
           <button onClick={() => router.push('/feed')} style={{ background:'#E8FF47', border:'none', borderRadius:20, padding:'9px 20px', color:'#0D0D0D', fontWeight:700, fontSize:13, cursor:'pointer' }}>
             Go say something →
           </button>

@@ -94,7 +94,7 @@ function DemoBanner() {
       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
         <span style={{ background:'#E8FF47', color:'#0D0D0D', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, fontFamily:"'DM Mono',monospace", flexShrink:0 }}>DEMO</span>
         <span style={{ color:'#888', fontSize:12, fontFamily:'Georgia,serif' }}>
-          You're exploring a demo account. Posts you make are visible to everyone.
+          You&apos;re exploring a demo account. Posts you make are visible to everyone.
         </span>
       </div>
       <button onClick={() => router.push('/signup')} style={{
