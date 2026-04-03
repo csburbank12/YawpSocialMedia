@@ -1,12 +1,28 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { signInWithEmailAndPassword } from 'firebase/auth'
 import { useAuth } from '@/lib/AuthContext'
+import { auth } from '@/lib/firebase'
 
 export default function Home() {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const [demoLoading, setDemoLoading] = useState(false)
+  const [demoError, setDemoError] = useState('')
+
+  const tryDemo = async () => {
+    setDemoLoading(true)
+    setDemoError('')
+    try {
+      await signInWithEmailAndPassword(auth, 'demo1@yawp.com', 'DemoYawp2024!')
+      router.push('/feed')
+    } catch {
+      setDemoError('Demo account unavailable. Try again shortly.')
+      setDemoLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (!loading && user) router.push('/feed')
@@ -56,6 +72,28 @@ export default function Home() {
           padding:'13px 28px', borderRadius:24, fontSize:15,
           border:'1px solid #2A2A2A'
         }}>Sign in</Link>
+      </div>
+
+      <div style={{ marginTop:32, textAlign:'center' }}>
+        <div style={{ color:'#333', fontSize:12, fontFamily:"'DM Mono',monospace", marginBottom:14, letterSpacing:'0.08em' }}>— or —</div>
+        <button
+          onClick={tryDemo}
+          disabled={demoLoading}
+          style={{
+            background:'none', border:'1px solid #2A2A2A', borderRadius:24,
+            padding:'11px 26px', color: demoLoading ? '#555' : '#888',
+            fontSize:14, cursor: demoLoading ? 'default' : 'pointer',
+            fontFamily:"'DM Mono',monospace", transition:'color 0.2s, border-color 0.2s'
+          }}
+          onMouseEnter={e => { if (!demoLoading) { (e.currentTarget as HTMLButtonElement).style.borderColor='#E8FF47'; (e.currentTarget as HTMLButtonElement).style.color='#E8FF47' }}}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor='#2A2A2A'; (e.currentTarget as HTMLButtonElement).style.color='#888' }}
+        >
+          {demoLoading ? 'Loading demo...' : 'Try a demo account →'}
+        </button>
+        <p style={{ color:'#444', fontSize:12, marginTop:8, fontFamily:'Georgia,serif' }}>
+          No sign-up needed. Explore Yawp as a real user.
+        </p>
+        {demoError && <p style={{ color:'#FF6B6B', fontSize:12, marginTop:6 }}>{demoError}</p>}
       </div>
 
       <div style={{
