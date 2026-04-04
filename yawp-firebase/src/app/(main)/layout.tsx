@@ -127,22 +127,26 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (!user) return
     const loadBadges = async () => {
-      // Unread notifications
-      const notifSnap = await getDocs(
-        query(collection(db, 'notifications', user.uid, 'items'), where('read', '==', false))
-      )
-      setUnreadNotifs(notifSnap.size)
+      try {
+        // Unread notifications
+        const notifSnap = await getDocs(
+          query(collection(db, 'notifications', user.uid, 'items'), where('read', '==', false))
+        )
+        setUnreadNotifs(notifSnap.size)
 
-      // Unread messages: conversations where the last message was sent by the OTHER person
-      const convSnap = await getDocs(
-        query(collection(db, 'conversations'), where('participants', 'array-contains', user.uid))
-      )
-      const unread = convSnap.docs.filter(d => {
-        const data = d.data()
-        // Unread if: someone else sent the last message AND user hasn't read it yet
-        return data.lastSenderId && data.lastSenderId !== user.uid && data.lastMessage && data.lastReadBy !== user.uid
-      }).length
-      setUnreadMsgs(unread)
+        // Unread messages: conversations where the last message was sent by the OTHER person
+        const convSnap = await getDocs(
+          query(collection(db, 'conversations'), where('participants', 'array-contains', user.uid))
+        )
+        const unread = convSnap.docs.filter(d => {
+          const data = d.data()
+          // Unread if: someone else sent the last message AND user hasn't read it yet
+          return data.lastSenderId && data.lastSenderId !== user.uid && data.lastMessage && data.lastReadBy !== user.uid
+        }).length
+        setUnreadMsgs(unread)
+      } catch (err) {
+        console.error('Badge refresh error:', err)
+      }
     }
     loadBadges()
 

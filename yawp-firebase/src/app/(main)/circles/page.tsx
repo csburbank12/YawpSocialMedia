@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { collection, query, orderBy, onSnapshot, addDoc, doc, getDoc, getDocs, where } from 'firebase/firestore'
-import { formatDistanceToNow } from 'date-fns'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
 import { Circle, CircleMessage } from '@/types'
@@ -24,22 +23,30 @@ export default function CirclesPage() {
     const q = query(collection(db, 'circles'), orderBy('memberCount', 'desc'))
     const unsub = onSnapshot(q, snap => {
       setCircles(snap.docs.map(d => ({ id: d.id, ...d.data() } as Circle)))
+    }, (err) => {
+      console.error('Circles listener error:', err)
     })
     return unsub
   }, [])
 
   useEffect(() => {
     if (!selected) return
-    const q = query(collection(db, 'circles', selected.id, 'messages'), orderBy('createdAt', 'asc'), )
+    const q = query(collection(db, 'circles', selected.id, 'messages'), orderBy('createdAt', 'asc'))
     const unsub = onSnapshot(q, async snap => {
-      const msgs: CircleMessage[] = []
-      for (const d of snap.docs) {
-        const data = d.data()
-        const profileSnap = await getDoc(doc(db, 'profiles', data.userId))
-        msgs.push({ id: d.id, ...data, profile: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as any : undefined } as CircleMessage)
+      try {
+        const msgs: CircleMessage[] = []
+        for (const d of snap.docs) {
+          const data = d.data()
+          const profileSnap = await getDoc(doc(db, 'profiles', data.userId))
+          msgs.push({ id: d.id, ...data, profile: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as any : undefined } as CircleMessage)
+        }
+        setMessages(msgs)
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior:'smooth' }), 50)
+      } catch (err) {
+        console.error('Circle messages error:', err)
       }
-      setMessages(msgs)
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior:'smooth' }), 50)
+    }, (err) => {
+      console.error('Circle messages snapshot error:', err)
     })
     return unsub
   }, [selected])

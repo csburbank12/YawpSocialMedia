@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { collection, query, orderBy, getDocs, writeBatch, doc } from 'firebase/firestore'
-import { formatDistanceToNow } from 'date-fns'
+import { safeTimeAgo } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
@@ -45,22 +45,28 @@ export default function NotificationsPage() {
   useEffect(() => {
     if (!user) return
     const load = async () => {
-      setLoading(true)
-      const q = query(
-        collection(db, 'notifications', user.uid, 'items'),
-        orderBy('createdAt', 'desc')
-      )
-      const snap = await getDocs(q)
-      setItems(snap.docs.map(d => ({ id: d.id, ...d.data() } as NotificationItem)))
-      setLoading(false)
+      try {
+        setLoading(true)
+        const q = query(
+          collection(db, 'notifications', user.uid, 'items'),
+          orderBy('createdAt', 'desc')
+        )
+        const snap = await getDocs(q)
+        setItems(snap.docs.map(d => ({ id: d.id, ...d.data() } as NotificationItem)))
+        setLoading(false)
 
-      // Mark all as read
-      if (!snap.empty) {
-        const batch = writeBatch(db)
-        snap.docs.forEach(d => {
-          if (!d.data().read) batch.update(doc(db, 'notifications', user.uid, 'items', d.id), { read: true })
-        })
-        await batch.commit()
+        // Mark all as read
+        const unread = snap.docs.filter(d => !d.data().read)
+        if (unread.length > 0) {
+          const batch = writeBatch(db)
+          unread.forEach(d => {
+            batch.update(doc(db, 'notifications', user.uid, 'items', d.id), { read: true })
+          })
+          await batch.commit()
+        }
+      } catch (err) {
+        console.error('Notifications load error:', err)
+        setLoading(false)
       }
     }
     load()
@@ -106,7 +112,7 @@ export default function NotificationsPage() {
               <Avatar username={item.fromUsername} size={22} />
               <span style={{ color:'#F0F0F0', fontWeight:600, fontSize:13 }}>{item.fromDisplayName}</span>
               <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>@{item.fromUsername}</span>
-              <span style={{ color:'#555', fontSize:11, marginLeft:'auto', flexShrink:0 }}>{formatDistanceToNow(new Date(item.createdAt), { addSuffix:true })}</span>
+              <span style={{ color:'#555', fontSize:11, marginLeft:'auto', flexShrink:0 }}>{safeTimeAgo(item.createdAt)}</span>
             </div>
             <p style={{ color:'#888', fontSize:13, fontFamily:'Georgia,serif', margin:0 }}>
               {TYPE_LABEL[item.type]}

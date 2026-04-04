@@ -4,10 +4,10 @@ import {
   collection, query, orderBy, limit, onSnapshot,
   addDoc, doc, setDoc, deleteDoc, getDoc, increment, updateDoc
 } from 'firebase/firestore'
-import { formatDistanceToNow } from 'date-fns'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
 import { Post } from '@/types'
+import { safeTimeAgo } from '@/lib/utils'
 import Avatar from '@/components/ui/Avatar'
 import { useRouter } from 'next/navigation'
 
@@ -23,24 +23,30 @@ export default function FeedPage() {
     if (!user) return
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(50))
     const unsub = onSnapshot(q, async (snap) => {
-      const postsData: Post[] = []
-      for (const d of snap.docs) {
-        const data = d.data()
-        const [profileSnap, heartSnap, echoSnap, bookmarkSnap] = await Promise.all([
-          getDoc(doc(db, 'profiles', data.userId)),
-          getDoc(doc(db, 'posts', d.id, 'hearts', user.uid)),
-          getDoc(doc(db, 'posts', d.id, 'echoes', user.uid)),
-          getDoc(doc(db, 'bookmarks', user.uid, 'posts', d.id)),
-        ])
-        postsData.push({
-          id: d.id, ...data,
-          profile: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as any : null,
-          hearted: heartSnap.exists(),
-          echoed: echoSnap.exists(),
-          bookmarked: bookmarkSnap.exists(),
-        } as Post)
+      try {
+        const postsData: Post[] = []
+        for (const d of snap.docs) {
+          const data = d.data()
+          const [profileSnap, heartSnap, echoSnap, bookmarkSnap] = await Promise.all([
+            getDoc(doc(db, 'profiles', data.userId)),
+            getDoc(doc(db, 'posts', d.id, 'hearts', user.uid)),
+            getDoc(doc(db, 'posts', d.id, 'echoes', user.uid)),
+            getDoc(doc(db, 'bookmarks', user.uid, 'posts', d.id)),
+          ])
+          postsData.push({
+            id: d.id, ...data,
+            profile: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as any : null,
+            hearted: heartSnap.exists(),
+            echoed: echoSnap.exists(),
+            bookmarked: bookmarkSnap.exists(),
+          } as Post)
+        }
+        setPosts(postsData)
+      } catch (err) {
+        console.error('Feed snapshot processing error:', err)
       }
-      setPosts(postsData)
+    }, (err) => {
+      console.error('Feed listener error:', err)
     })
     return unsub
   }, [user])
@@ -48,61 +54,81 @@ export default function FeedPage() {
   const handlePost = async () => {
     if (!content.trim() || posting || !user || !profile) return
     setPosting(true)
-    const tags = Array.from(new Set((content.match(/#\w+/g) || []).map(t => t.toLowerCase())))
-    await addDoc(collection(db, 'posts'), {
-      userId: user.uid, content: content.trim(), tags,
-      heartCount: 0, echoCount: 0, replyCount: 0, createdAt: Date.now(),
-    })
-    setContent('')
+    try {
+      const tags = Array.from(new Set((content.match(/#\w+/g) || []).map(t => t.toLowerCase())))
+      await addDoc(collection(db, 'posts'), {
+        userId: user.uid, content: content.trim(), tags,
+        heartCount: 0, echoCount: 0, replyCount: 0, createdAt: Date.now(),
+      })
+      setContent('')
+    } catch (err) {
+      console.error('Post creation error:', err)
+    }
     setPosting(false)
   }
 
   const toggleHeart = async (post: Post) => {
     if (!user) return
-    const heartRef = doc(db, 'posts', post.id, 'hearts', user.uid)
-    const postRef = doc(db, 'posts', post.id)
-    if (post.hearted) {
-      await deleteDoc(heartRef)
-      await updateDoc(postRef, { heartCount: increment(-1) })
-    } else {
-      await setDoc(heartRef, { userId: user.uid, createdAt: Date.now() })
-      await updateDoc(postRef, { heartCount: increment(1) })
-      if (post.userId !== user.uid && profile) {
-        await setDoc(doc(db, 'notifications', post.userId, 'items', `heart_${post.id}_${user.uid}`), {
-          type: 'heart', fromUserId: user.uid, fromUsername: profile.username,
-          fromDisplayName: profile.displayName, postId: post.id,
-          postContent: post.content.slice(0, 80), createdAt: Date.now(), read: false,
-        })
+    try {
+      const heartRef = doc(db, 'posts', post.id, 'hearts', user.uid)
+      const postRef = doc(db, 'posts', post.id)
+      if (post.hearted) {
+        await deleteDoc(heartRef)
+        await updateDoc(postRef, { heartCount: increment(-1) })
+      } else {
+        await setDoc(heartRef, { userId: user.uid, createdAt: Date.now() })
+        await updateDoc(postRef, { heartCount: increment(1) })
+        if (post.userId !== user.uid && profile) {
+          await setDoc(doc(db, 'notifications', post.userId, 'items', `heart_${post.id}_${user.uid}`), {
+            type: 'heart', fromUserId: user.uid, fromUsername: profile.username,
+            fromDisplayName: profile.displayName, postId: post.id,
+            postContent: post.content.slice(0, 80), createdAt: Date.now(), read: false,
+          })
+        }
       }
+    } catch (err) {
+      console.error('Heart toggle error:', err)
     }
   }
 
   const toggleEcho = async (post: Post) => {
     if (!user) return
-    const echoRef = doc(db, 'posts', post.id, 'echoes', user.uid)
-    const postRef = doc(db, 'posts', post.id)
-    if (post.echoed) {
-      await deleteDoc(echoRef)
-      await updateDoc(postRef, { echoCount: increment(-1) })
-    } else {
-      await setDoc(echoRef, { userId: user.uid, createdAt: Date.now() })
-      await updateDoc(postRef, { echoCount: increment(1) })
+    try {
+      const echoRef = doc(db, 'posts', post.id, 'echoes', user.uid)
+      const postRef = doc(db, 'posts', post.id)
+      if (post.echoed) {
+        await deleteDoc(echoRef)
+        await updateDoc(postRef, { echoCount: increment(-1) })
+      } else {
+        await setDoc(echoRef, { userId: user.uid, createdAt: Date.now() })
+        await updateDoc(postRef, { echoCount: increment(1) })
+      }
+    } catch (err) {
+      console.error('Echo toggle error:', err)
     }
   }
 
   const toggleBookmark = async (post: Post) => {
     if (!user) return
-    const ref = doc(db, 'bookmarks', user.uid, 'posts', post.id)
-    if (post.bookmarked) {
-      await deleteDoc(ref)
-    } else {
-      await setDoc(ref, { postId: post.id, savedAt: Date.now() })
+    try {
+      const ref = doc(db, 'bookmarks', user.uid, 'posts', post.id)
+      if (post.bookmarked) {
+        await deleteDoc(ref)
+      } else {
+        await setDoc(ref, { postId: post.id, savedAt: Date.now() })
+      }
+    } catch (err) {
+      console.error('Bookmark toggle error:', err)
     }
   }
 
   const deletePost = async (postId: string) => {
     if (!confirm('Delete this yawp?')) return
-    await deleteDoc(doc(db, 'posts', postId))
+    try {
+      await deleteDoc(doc(db, 'posts', postId))
+    } catch (err) {
+      console.error('Post deletion error:', err)
+    }
   }
 
   const remaining = 280 - content.length
@@ -190,7 +216,7 @@ function PostCard({ post, currentUserId, onHeart, onEcho, onBookmark, onDelete, 
 }) {
   const [hovered, setHovered] = useState(false)
   const username = post.profile?.username ?? 'unknown'
-  const timeAgo = formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })
+  const timeAgo = safeTimeAgo(post.createdAt)
   const isOwner = post.userId === currentUserId
 
   return (

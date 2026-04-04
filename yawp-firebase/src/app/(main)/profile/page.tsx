@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { collection, query, where, orderBy, limit, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
 import { useRouter } from 'next/navigation'
-import { formatDistanceToNow } from 'date-fns'
+import { safeTimeAgo } from '@/lib/utils'
 import { db, auth } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
 import { Post } from '@/types'
@@ -163,7 +163,7 @@ export default function ProfilePage() {
           onMouseLeave={e => { const btn = e.currentTarget.querySelector<HTMLButtonElement>('.del-btn'); if (btn) btn.style.opacity='0' }}>
           <p style={{ color:'#F0F0F0', fontSize:14, fontFamily:'Georgia,serif', lineHeight:1.55, marginBottom:8 }}>{post.content}</p>
           <div style={{ display:'flex', alignItems:'center', gap:16 }}>
-            <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>{formatDistanceToNow(new Date(post.createdAt), { addSuffix:true })}</span>
+            <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>{safeTimeAgo(post.createdAt)}</span>
             <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>♥ {post.heartCount}</span>
             <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>◎ {post.replyCount}</span>
           </div>

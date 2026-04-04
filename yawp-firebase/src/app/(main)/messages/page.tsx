@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { collection, query, where, orderBy, onSnapshot, addDoc, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore'
-import { formatDistanceToNow } from 'date-fns'
+import { safeTimeAgo } from '@/lib/utils'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
 import { Conversation, DirectMessage, Profile } from '@/types'
@@ -23,14 +23,20 @@ export default function MessagesPage() {
     // Load conversations where user is a participant
     const q = query(collection(db, 'conversations'), where('participants', 'array-contains', user.uid), orderBy('lastMessageAt', 'desc'))
     const unsub = onSnapshot(q, async snap => {
-      const convs: Conversation[] = []
-      for (const d of snap.docs) {
-        const data = d.data()
-        const otherId = data.participants.find((p: string) => p !== user.uid)
-        const profileSnap = await getDoc(doc(db, 'profiles', otherId))
-        convs.push({ id: d.id, ...data, otherUser: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as Profile : undefined } as any as Conversation)
+      try {
+        const convs: Conversation[] = []
+        for (const d of snap.docs) {
+          const data = d.data()
+          const otherId = data.participants.find((p: string) => p !== user.uid)
+          const profileSnap = await getDoc(doc(db, 'profiles', otherId))
+          convs.push({ id: d.id, ...data, otherUser: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as Profile : undefined } as any as Conversation)
+        }
+        setConversations(convs)
+      } catch (err) {
+        console.error('Conversations listener error:', err)
       }
-      setConversations(convs)
+    }, (err) => {
+      console.error('Conversations snapshot error:', err)
     })
 
     // Load following for new conversation
@@ -52,12 +58,14 @@ export default function MessagesPage() {
     // Mark conversation as read when opened (clear unread badge)
     const convData = selected.conv as any
     if (convData.lastSenderId && convData.lastSenderId !== user.uid) {
-      updateDoc(doc(db, 'conversations', selected.conv.id), { lastReadBy: user.uid })
+      updateDoc(doc(db, 'conversations', selected.conv.id), { lastReadBy: user.uid }).catch(() => {})
     }
     const q = query(collection(db, 'conversations', selected.conv.id, 'messages'), orderBy('createdAt', 'asc'))
     const unsub = onSnapshot(q, snap => {
       setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as DirectMessage)))
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior:'smooth' }), 50)
+    }, (err) => {
+      console.error('Messages snapshot error:', err)
     })
     return unsub
   }, [selected, user])
@@ -114,7 +122,7 @@ export default function MessagesPage() {
                   {m.content}
                 </div>
                 <div style={{ color:'#555', fontSize:10, marginTop:3, textAlign: isMe ? 'right' : 'left', fontFamily:"'DM Mono',monospace" }}>
-                  {formatDistanceToNow(new Date(m.createdAt), { addSuffix:true })}
+                  {safeTimeAgo(m.createdAt)}
                 </div>
               </div>
             </div>
@@ -183,7 +191,7 @@ export default function MessagesPage() {
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:3 }}>
                 <span style={{ color:'#F0F0F0', fontWeight:600, fontSize:14 }}>{other.displayName ?? other.username}</span>
-                <span style={{ color:'#555', fontSize:11 }}>{conv.lastMessageAt ? formatDistanceToNow(new Date(conv.lastMessageAt), { addSuffix:true }) : ''}</span>
+                <span style={{ color:'#555', fontSize:11 }}>{conv.lastMessageAt ? safeTimeAgo(conv.lastMessageAt) : ''}</span>
               </div>
               <div style={{ color:'#555', fontSize:13, fontFamily:'Georgia,serif', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{conv.lastMessage || 'No messages yet'}</div>
             </div>

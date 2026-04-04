@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { collection, query, where, orderBy, limit, getDocs, doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore'
-import { formatDistanceToNow } from 'date-fns'
+import { safeTimeAgo } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
@@ -170,7 +170,7 @@ export default function PublicProfilePage({ params }: { params: { username: stri
             </div>
           )}
           <div style={{ display:'flex', gap:14, alignItems:'center' }}>
-            <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>{formatDistanceToNow(new Date(post.createdAt), { addSuffix:true })}</span>
+            <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>{safeTimeAgo(post.createdAt)}</span>
             <span style={{ color:'#555', fontSize:11 }}>♥ {post.heartCount}</span>
             <span style={{ color:'#555', fontSize:11 }}>◎ {post.replyCount}</span>
           </div>

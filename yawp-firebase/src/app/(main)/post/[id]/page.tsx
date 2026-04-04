@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
 import { Post, Reply } from '@/types'
 import Avatar from '@/components/ui/Avatar'
-import { formatDistanceToNow as fmtDistance } from 'date-fns'
+import { safeTimeAgo } from '@/lib/utils'
 
 export default function PostPage({ params }: { params: { id: string } }) {
   const { user, profile } = useAuth()
@@ -37,18 +37,24 @@ export default function PostPage({ params }: { params: { id: string } }) {
 
     const q = query(collection(db, 'posts', params.id, 'replies'), orderBy('createdAt', 'asc'))
     const unsub = onSnapshot(q, async snap => {
-      const replyData: Reply[] = []
-      for (const d of snap.docs) {
-        const data = d.data()
-        const profileSnap = await getDoc(doc(db, 'profiles', data.userId))
-        const heartSnap = await getDoc(doc(db, 'posts', params.id, 'replies', d.id, 'hearts', user.uid))
-        replyData.push({
-          id: d.id, ...data,
-          profile: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as any : null,
-          hearted: heartSnap.exists(),
-        } as Reply)
+      try {
+        const replyData: Reply[] = []
+        for (const d of snap.docs) {
+          const data = d.data()
+          const profileSnap = await getDoc(doc(db, 'profiles', data.userId))
+          const heartSnap = await getDoc(doc(db, 'posts', params.id, 'replies', d.id, 'hearts', user.uid))
+          replyData.push({
+            id: d.id, ...data,
+            profile: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as any : null,
+            hearted: heartSnap.exists(),
+          } as Reply)
+        }
+        setReplies(replyData)
+      } catch (err) {
+        console.error('Replies listener error:', err)
       }
-      setReplies(replyData)
+    }, (err) => {
+      console.error('Replies snapshot error:', err)
     })
     return unsub
   }, [params.id, user])
@@ -161,7 +167,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
               <span style={{ color:'#F0F0F0', fontWeight:700, fontSize:14 }}>{post.profile?.displayName ?? username}</span>
               <span style={{ color:'#555', fontSize:12, fontFamily:"'DM Mono',monospace" }}>@{username}</span>
-              <span style={{ color:'#555', fontSize:12, marginLeft:'auto' }}>{fmtDistance(new Date(post.createdAt), { addSuffix:true })}</span>
+              <span style={{ color:'#555', fontSize:12, marginLeft:'auto' }}>{safeTimeAgo(post.createdAt)}</span>
             </div>
             <p style={{ color:'#F0F0F0', fontSize:15, lineHeight:1.6, margin:'0 0 12px', fontFamily:'Georgia,serif' }}>{post.content}</p>
             {post.tags?.length > 0 && (
@@ -217,7 +223,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
                   <span style={{ color:'#F0F0F0', fontWeight:600, fontSize:13 }}>{reply.profile?.displayName ?? ru}</span>
                   <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>@{ru}</span>
-                  <span style={{ color:'#555', fontSize:11, marginLeft:'auto' }}>{fmtDistance(new Date(reply.createdAt), { addSuffix:true })}</span>
+                  <span style={{ color:'#555', fontSize:11, marginLeft:'auto' }}>{safeTimeAgo(reply.createdAt)}</span>
                 </div>
                 <p style={{ color:'#E0E0E0', fontSize:14, lineHeight:1.6, margin:'0 0 10px', fontFamily:'Georgia,serif' }}>{reply.content}</p>
                 {/* Reply heart */}
