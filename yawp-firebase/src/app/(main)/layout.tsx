@@ -133,13 +133,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       )
       setUnreadNotifs(notifSnap.size)
 
-      // Unread messages (conversations with no readAt on last message from other person)
-      // Simple proxy: count conversations updated in last hour that we didn't initiate
+      // Unread messages: conversations where the last message was sent by the OTHER person
       const convSnap = await getDocs(
         query(collection(db, 'conversations'), where('participants', 'array-contains', user.uid))
       )
-      // Count conversations where lastMessageAt > last read (simplified: count all active convs for now)
-      setUnreadMsgs(0) // placeholder — full read-receipt system would be needed for accuracy
+      const unread = convSnap.docs.filter(d => {
+        const data = d.data()
+        // lastSenderId present and is not the current user → unread
+        return data.lastSenderId && data.lastSenderId !== user.uid && data.lastMessage
+      }).length
+      setUnreadMsgs(unread)
     }
     loadBadges()
 

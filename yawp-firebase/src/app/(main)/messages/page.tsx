@@ -77,7 +77,11 @@ export default function MessagesPage() {
     await addDoc(collection(db, 'conversations', selected.conv.id, 'messages'), {
       senderId: user.uid, content: text, readAt: null, createdAt: Date.now(),
     })
-    await setDoc(doc(db, 'conversations', selected.conv.id), { lastMessage: text, lastMessageAt: Date.now() }, { merge: true })
+    await setDoc(doc(db, 'conversations', selected.conv.id), {
+      lastMessage: text,
+      lastMessageAt: Date.now(),
+      lastSenderId: user.uid,
+    }, { merge: true })
   }
 
   const filteredFollowing = following.filter(p =>
