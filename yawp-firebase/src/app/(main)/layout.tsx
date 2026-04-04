@@ -122,7 +122,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!loading && !user) router.push('/login')
-  }, [user, loading])
+  }, [user, loading, router])
 
   useEffect(() => {
     if (!user) return

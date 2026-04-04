@@ -69,7 +69,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!loading && user) router.push('/feed')
-  }, [user, loading])
+  }, [user, loading, router])
 
   const tryDemo = async () => {
     setDemoLoading(true)
