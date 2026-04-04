@@ -23,10 +23,13 @@ export default function DiscoverPage() {
     const load = async () => {
       setLoading(true)
       const snap = await getDocs(collection(db, 'profiles'))
-      // Filter out the current user and all demo accounts so they don't clutter Discover
+      // Filter out the current user. For non-demo users, also filter out demo accounts
+      // so they don't clutter Discover. Demo users should see other demo accounts.
+      const currentProfile = snap.docs.find(d => d.id === user.uid)?.data()
+      const currentIsDemo = currentProfile?.isDemo === true
       setPeople(
         snap.docs
-          .filter(d => d.id !== user.uid && !d.data().isDemo)
+          .filter(d => d.id !== user.uid && (currentIsDemo || !d.data().isDemo))
           .map(d => ({ id: d.id, ...d.data() } as Profile))
       )
 
