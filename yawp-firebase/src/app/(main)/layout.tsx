@@ -88,21 +88,27 @@ function DemoBanner() {
   const router = useRouter()
   return (
     <div style={{
-      background:'#0D1500', borderBottom:'1px solid #2A3A00',
-      padding:'9px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12,
+      background:'linear-gradient(90deg, #0D1500 0%, #111A00 100%)',
+      borderBottom:'1px solid #2A3A00',
+      padding:'10px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12,
+      flexWrap:'wrap',
     }}>
-      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-        <span style={{ background:'#E8FF47', color:'#0D0D0D', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, fontFamily:"'DM Mono',monospace", flexShrink:0 }}>DEMO</span>
-        <span style={{ color:'#888', fontSize:12, fontFamily:'Georgia,serif' }}>
-          You&apos;re exploring a demo account. Posts you make are visible to everyone.
+      <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+        <span style={{ background:'#E8FF47', color:'#0D0D0D', fontSize:9, fontWeight:700, padding:'3px 8px', borderRadius:20, fontFamily:"'DM Mono',monospace", letterSpacing:'0.08em', flexShrink:0 }}>LIVE DEMO</span>
+        <span style={{ color:'#AAA', fontSize:12, fontFamily:'Georgia,serif' }}>
+          You&apos;re exploring Yawp freely — post, join circles, send messages.
+          <span style={{ color:'#666' }}> Everything resets periodically.</span>
         </span>
       </div>
       <button onClick={() => router.push('/signup')} style={{
-        background:'#E8FF47', border:'none', borderRadius:20, padding:'5px 14px',
+        background:'#E8FF47', border:'none', borderRadius:20, padding:'6px 16px',
         color:'#0D0D0D', fontWeight:700, fontSize:11, cursor:'pointer', flexShrink:0,
-        fontFamily:"'DM Mono',monospace",
-      }}>
-        Create your account →
+        fontFamily:"'DM Mono',monospace", letterSpacing:'0.04em',
+        transition:'opacity 0.15s',
+      }}
+        onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+        Make it yours →
       </button>
     </div>
   )

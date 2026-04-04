@@ -39,9 +39,10 @@ export default function LoginPage() {
 
   const tryDemo = async () => {
     setDemoLoading(true)
-    setDemoStatus('Setting up demo…')
+    setDemoStatus('Connecting…')
     try {
-      await launchDemo()
+      await launchDemo((msg) => setDemoStatus(msg))
+      setDemoStatus('Opening Yawp…')
       router.push('/feed')
     } catch (err: any) {
       setDemoStatus(err?.message || err?.code || 'Demo unavailable — try again shortly.')
