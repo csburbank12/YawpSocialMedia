@@ -74,10 +74,10 @@ export default function Home() {
   const tryDemo = async () => {
     setDemoLoading(true)
     setDemoError('')
-    setDemoStatus('Checking demo account…')
+    setDemoStatus('Connecting…')
     try {
-      await launchDemo()
-      setDemoStatus('Ready!')
+      await launchDemo((msg) => setDemoStatus(msg))
+      setDemoStatus('Opening Yawp…')
       router.push('/feed')
     } catch (err: any) {
       setDemoError(err?.message || err?.code || 'Demo unavailable. Please try again shortly.')
