@@ -23,6 +23,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [demoLoading, setDemoLoading] = useState(false)
   const [demoStatus, setDemoStatus] = useState('')
+  const [demoError, setDemoError] = useState('')
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,14 +40,16 @@ export default function LoginPage() {
 
   const tryDemo = async () => {
     setDemoLoading(true)
+    setDemoError('')
     setDemoStatus('Connecting…')
     try {
       await launchDemo((msg) => setDemoStatus(msg))
       setDemoStatus('Opening Yawp…')
       router.push('/feed')
     } catch (err: any) {
-      setDemoStatus(err?.message || err?.code || 'Demo unavailable — try again shortly.')
+      setDemoError(err?.message || err?.code || 'Demo unavailable — try again shortly.')
       setDemoLoading(false)
+      setDemoStatus('')
     }
   }
 
@@ -79,6 +82,7 @@ export default function LoginPage() {
           onMouseLeave={e => { const b = e.currentTarget; b.style.borderColor='#3A3A3A'; b.style.color='#AAA' }}>
           {demoLoading ? demoStatus : '▶ Try a demo account — no sign-up needed'}
         </button>
+        {demoError && <p style={{ color:'#FF6B6B', fontSize:12, marginTop:8, textAlign:'center' }}>{demoError}</p>}
 
         <p style={{ textAlign:'center', color:'#555', fontSize:13, marginTop:20 }}>
           New to Yawp?{' '}

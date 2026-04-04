@@ -25,8 +25,7 @@ export default function DiscoverPage() {
       const snap = await getDocs(collection(db, 'profiles'))
       // Filter out the current user. For non-demo users, also filter out demo accounts
       // so they don't clutter Discover. Demo users should see other demo accounts.
-      const currentProfile = snap.docs.find(d => d.id === user.uid)?.data()
-      const currentIsDemo = currentProfile?.isDemo === true
+      const currentIsDemo = profile?.isDemo === true
       setPeople(
         snap.docs
           .filter(d => d.id !== user.uid && (currentIsDemo || !d.data().isDemo))
@@ -46,7 +45,7 @@ export default function DiscoverPage() {
       setLoading(false)
     }
     load()
-  }, [user])
+  }, [user, profile])
 
   const toggleFollow = async (targetProfile: Profile) => {
     if (!user || !profile) return

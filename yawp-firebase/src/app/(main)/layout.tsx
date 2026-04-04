@@ -139,8 +139,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       )
       const unread = convSnap.docs.filter(d => {
         const data = d.data()
-        // lastSenderId present and is not the current user → unread
-        return data.lastSenderId && data.lastSenderId !== user.uid && data.lastMessage
+        // Unread if: someone else sent the last message AND user hasn't read it yet
+        return data.lastSenderId && data.lastSenderId !== user.uid && data.lastMessage && data.lastReadBy !== user.uid
       }).length
       setUnreadMsgs(unread)
     }

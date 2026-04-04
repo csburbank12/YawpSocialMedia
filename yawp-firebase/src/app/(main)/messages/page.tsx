@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { collection, query, where, orderBy, onSnapshot, addDoc, doc, getDoc, getDocs, setDoc, or } from 'firebase/firestore'
+import { collection, query, where, orderBy, onSnapshot, addDoc, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore'
 import { formatDistanceToNow } from 'date-fns'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/AuthContext'
@@ -48,14 +48,19 @@ export default function MessagesPage() {
   }, [user])
 
   useEffect(() => {
-    if (!selected) return
+    if (!selected || !user) return
+    // Mark conversation as read when opened (clear unread badge)
+    const convData = selected.conv as any
+    if (convData.lastSenderId && convData.lastSenderId !== user.uid) {
+      updateDoc(doc(db, 'conversations', selected.conv.id), { lastReadBy: user.uid })
+    }
     const q = query(collection(db, 'conversations', selected.conv.id, 'messages'), orderBy('createdAt', 'asc'))
     const unsub = onSnapshot(q, snap => {
       setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as DirectMessage)))
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior:'smooth' }), 50)
     })
     return unsub
-  }, [selected])
+  }, [selected, user])
 
   const startConversation = async (otherUser: Profile) => {
     if (!user) return
