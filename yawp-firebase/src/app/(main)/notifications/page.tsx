@@ -36,6 +36,25 @@ const TYPE_LABEL: Record<string, string> = {
   reply: 'replied to your yawp',
 }
 
+function NotifSkeleton() {
+  return (
+    <div>
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="animate-fade-in" style={{ background: '#141414', border: '1px solid #2A2A2A', borderRadius: 14, padding: '14px 16px', marginBottom: 10, display: 'flex', alignItems: 'flex-start', gap: 14, animationDelay: `${i * 0.08}s` }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%' }} className="skeleton" />
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <div style={{ height: 12, width: 80 }} className="skeleton" />
+              <div style={{ height: 12, width: 60 }} className="skeleton" />
+            </div>
+            <div style={{ height: 12, width: '70%' }} className="skeleton" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function NotificationsPage() {
   const { user } = useAuth()
   const router = useRouter()
@@ -54,7 +73,6 @@ export default function NotificationsPage() {
       setItems(snap.docs.map(d => ({ id: d.id, ...d.data() } as NotificationItem)))
       setLoading(false)
 
-      // Mark all as read
       if (!snap.empty) {
         const batch = writeBatch(db)
         snap.docs.forEach(d => {
@@ -67,56 +85,58 @@ export default function NotificationsPage() {
   }, [user])
 
   return (
-    <div style={{ maxWidth:640, margin:'0 auto', padding:'24px 16px' }}>
-      <div style={{ marginBottom:24 }}>
-        <h2 style={{ color:'#F0F0F0', fontSize:20, fontWeight:700, marginBottom:4 }}>Notifications</h2>
-        <p style={{ color:'#888', fontSize:13, fontFamily:'Georgia,serif' }}>Activity on your account.</p>
+    <div style={{ maxWidth: 640, margin: '0 auto', padding: '24px 16px' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ color: '#F0F0F0', fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Notifications</h2>
+        <p style={{ color: '#888', fontSize: 13, fontFamily: 'Georgia,serif' }}>Activity on your account.</p>
       </div>
 
-      {loading ? (
-        <div style={{ color:'#555', textAlign:'center', padding:'40px 20px', fontSize:13 }}>Loading...</div>
-      ) : items.length === 0 ? (
-        <div style={{ textAlign:'center', padding:'60px 20px' }}>
-          <p style={{ fontSize:28, marginBottom:12 }}>◎</p>
-          <p style={{ fontFamily:'Georgia,serif', fontSize:16, color:'#888', marginBottom:6 }}>No notifications yet.</p>
-          <p style={{ color:'#555', fontSize:13 }}>When someone hearts or replies to your yawp, it&apos;ll show up here.</p>
+      {loading ? <NotifSkeleton /> : items.length === 0 ? (
+        <div className="animate-fade-in" style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <p style={{ fontSize: 28, marginBottom: 12 }}>◎</p>
+          <p style={{ fontFamily: 'Georgia,serif', fontSize: 16, color: '#888', marginBottom: 6 }}>No notifications yet.</p>
+          <p style={{ color: '#555', fontSize: 13 }}>When someone hearts or replies to your yawp, it&apos;ll show up here.</p>
         </div>
-      ) : items.map(item => (
+      ) : items.map((item, i) => (
         <div
           key={item.id}
-          onClick={() => item.postId && router.push(`/post/${item.postId}`)}
+          className="animate-fade-in-up"
+          onClick={() => {
+            if (item.type === 'follow') router.push(`/profile/${item.fromUsername}`)
+            else if (item.postId) router.push(`/post/${item.postId}`)
+          }}
           style={{
             background: item.read ? '#141414' : '#0D150D',
             border: `1px solid ${item.read ? '#2A2A2A' : '#1A3A1A'}`,
-            borderRadius:14, padding:'14px 16px', marginBottom:10,
-            cursor: item.postId ? 'pointer' : 'default',
-            display:'flex', alignItems:'flex-start', gap:14,
-            transition:'border-color 0.2s',
+            borderRadius: 14, padding: '14px 16px', marginBottom: 10,
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+            transition: 'border-color 0.2s',
+            animationDelay: `${Math.min(i * 0.04, 0.3)}s`,
           }}
-          onMouseEnter={e => { if (item.postId) e.currentTarget.style.borderColor = '#3A3A3A' }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = '#3A3A3A'}
           onMouseLeave={e => { e.currentTarget.style.borderColor = item.read ? '#2A2A2A' : '#1A3A1A' }}
         >
-          {/* Type icon */}
-          <div style={{ width:36, height:36, borderRadius:'50%', background: TYPE_COLOR[item.type] + '22', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:16, color: TYPE_COLOR[item.type] }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: TYPE_COLOR[item.type] + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16, color: TYPE_COLOR[item.type] }}>
             {TYPE_ICON[item.type]}
           </div>
 
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <Avatar username={item.fromUsername} size={22} />
-              <span style={{ color:'#F0F0F0', fontWeight:600, fontSize:13 }}>{item.fromDisplayName}</span>
-              <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace" }}>@{item.fromUsername}</span>
-              <span style={{ color:'#555', fontSize:11, marginLeft:'auto', flexShrink:0 }}>{formatDistanceToNow(new Date(item.createdAt), { addSuffix:true })}</span>
+              <span style={{ color: '#F0F0F0', fontWeight: 600, fontSize: 13 }}>{item.fromDisplayName}</span>
+              <span style={{ color: '#555', fontSize: 11, fontFamily: "'DM Mono',monospace" }}>@{item.fromUsername}</span>
+              <span style={{ color: '#555', fontSize: 11, marginLeft: 'auto', flexShrink: 0 }}>{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}</span>
             </div>
-            <p style={{ color:'#888', fontSize:13, fontFamily:'Georgia,serif', margin:0 }}>
+            <p style={{ color: '#888', fontSize: 13, fontFamily: 'Georgia,serif', margin: 0 }}>
               {TYPE_LABEL[item.type]}
               {item.postContent && (
-                <span style={{ color:'#555', display:'block', marginTop:3, fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                <span style={{ color: '#555', display: 'block', marginTop: 3, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   &quot;{item.postContent}{item.postContent.length === 80 ? '…' : ''}&quot;
                 </span>
               )}
               {item.replyContent && (
-                <span style={{ color:'#888', display:'block', marginTop:2, fontSize:12, fontStyle:'italic' }}>
+                <span style={{ color: '#888', display: 'block', marginTop: 2, fontSize: 12, fontStyle: 'italic' }}>
                   &quot;{item.replyContent}{item.replyContent.length === 80 ? '…' : ''}&quot;
                 </span>
               )}
@@ -124,7 +144,7 @@ export default function NotificationsPage() {
           </div>
 
           {!item.read && (
-            <div style={{ width:8, height:8, borderRadius:'50%', background:'#47FFB2', flexShrink:0, marginTop:4 }} />
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#47FFB2', flexShrink: 0, marginTop: 4 }} />
           )}
         </div>
       ))}
