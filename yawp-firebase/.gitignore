@@ -17,3 +17,7 @@ tsconfig.tsbuildinfo
 # Misc
 .DS_Store
 *.log
+
+# Firebase service account key - never commit
+serviceAccountKey.json
+*serviceAccount*.json
