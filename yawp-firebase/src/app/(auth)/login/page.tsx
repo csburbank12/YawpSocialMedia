@@ -23,6 +23,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [demoLoading, setDemoLoading] = useState(false)
   const [demoStatus, setDemoStatus] = useState('')
+  const [demoError, setDemoError] = useState('')
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,13 +40,16 @@ export default function LoginPage() {
 
   const tryDemo = async () => {
     setDemoLoading(true)
+    setDemoError('')
     setDemoStatus('Setting up demo…')
     try {
       await launchDemo()
+      setDemoStatus('Ready!')
       router.push('/feed')
     } catch (err: any) {
-      setDemoStatus(err?.message || err?.code || 'Demo unavailable — try again shortly.')
+      setDemoError(err?.message || err?.code || 'Demo unavailable — try again shortly.')
       setDemoLoading(false)
+      setDemoStatus('')
     }
   }
 
@@ -76,8 +80,9 @@ export default function LoginPage() {
         <button onClick={tryDemo} disabled={demoLoading} style={{ width:'100%', background:'#141414', border:'1px solid #3A3A3A', borderRadius:10, padding:13, color: demoLoading ? '#666' : '#AAA', fontWeight:600, fontSize:14, cursor: demoLoading ? 'default' : 'pointer', fontFamily:"'DM Mono',monospace", transition:'all 0.2s' }}
           onMouseEnter={e => { if (!demoLoading) { const b = e.currentTarget; b.style.borderColor='#E8FF47'; b.style.color='#E8FF47' }}}
           onMouseLeave={e => { const b = e.currentTarget; b.style.borderColor='#3A3A3A'; b.style.color='#AAA' }}>
-          {demoLoading ? demoStatus : '▶ Try a demo account — no sign-up needed'}
+          {demoLoading ? (demoStatus || 'Setting up demo…') : '▶ Try a demo account — no sign-up needed'}
         </button>
+        {demoError && <p style={{ color:'#FF6B6B', fontSize:12, marginTop:8, textAlign:'center' }}>{demoError}</p>}
 
         <p style={{ textAlign:'center', color:'#555', fontSize:13, marginTop:20 }}>
           New to Yawp?{' '}

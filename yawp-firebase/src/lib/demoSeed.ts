@@ -262,8 +262,10 @@ export async function launchDemo(): Promise<void> {
   const needsSeed = !profileDoc.exists() || postsSnap.empty
 
   if (needsSeed) {
-    await auth.signOut()
-
+    // Create all demo accounts and collect UIDs.
+    // Avoid signing out between creations — each getOrCreateUid call
+    // naturally signs in as the new user, preventing onAuthStateChanged
+    // from firing with null and causing redirect flicker.
     const uids: string[] = []
     for (const profile of DEMO_PROFILES) {
       const uid = await getOrCreateUid(profile)
@@ -277,7 +279,6 @@ export async function launchDemo(): Promise<void> {
         createdAt: daysAgo(30),
         isDemo: true,
       })
-      await auth.signOut()
       uids.push(uid)
     }
 
