@@ -90,8 +90,13 @@ export default function ProfilePage() {
         </div>
 
         {editing ? (
-          <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Write a short bio..." maxLength={160} rows={3}
-            style={{ width:'100%', background:'#1A1A1A', border:'1px solid #3A3A3A', borderRadius:8, padding:'8px 10px', color:'#F0F0F0', fontSize:14, outline:'none', resize:'none', fontFamily:'Georgia,serif', lineHeight:1.5, marginBottom:16 }} />
+          <div style={{ marginBottom:16 }}>
+            <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Write a short bio..." maxLength={160} rows={3}
+              style={{ width:'100%', background:'#1A1A1A', border:'1px solid #3A3A3A', borderRadius:8, padding:'8px 10px', color:'#F0F0F0', fontSize:14, outline:'none', resize:'none', fontFamily:'Georgia,serif', lineHeight:1.5 }} />
+            <div style={{ textAlign:'right', color: 160 - bio.length < 20 ? '#FF6B6B' : '#555', fontSize:11, fontFamily:"'DM Mono',monospace", marginTop:4 }}>
+              {160 - bio.length} remaining
+            </div>
+          </div>
         ) : profile.bio ? (
           <p style={{ color:'#888', fontSize:14, fontFamily:'Georgia,serif', lineHeight:1.6, marginBottom:16 }}>{profile.bio}</p>
         ) : (
@@ -129,11 +134,14 @@ export default function ProfilePage() {
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
             <span style={{ background:'#E8FF47', color:'#0D0D0D', fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, fontFamily:"'DM Mono',monospace" }}>PLUS</span>
             <div style={{ color:'#F0F0F0', fontWeight:700, fontSize:15 }}>Yawp+</div>
+            <span style={{ color:'#555', fontSize:11, fontFamily:"'DM Mono',monospace", marginLeft:4 }}>coming soon</span>
           </div>
           <p style={{ color:'#888', fontSize:13, fontFamily:'Georgia,serif', lineHeight:1.6, marginBottom:14 }}>
             Support an ad-free internet. Get early access to new features. Keep the lights on.
           </p>
-          <button style={{ background:'#E8FF47', border:'none', borderRadius:20, padding:'9px 20px', color:'#0D0D0D', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+          <button
+            disabled
+            style={{ background:'#2A2200', border:'1px solid #3A3200', borderRadius:20, padding:'9px 20px', color:'#666', fontWeight:700, fontSize:13, cursor:'not-allowed', fontFamily:"'DM Mono',monospace" }}>
             Join Yawp+ — $5/mo
           </button>
         </div>

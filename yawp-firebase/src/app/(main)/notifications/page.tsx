@@ -112,12 +112,12 @@ export default function NotificationsPage() {
               {TYPE_LABEL[item.type]}
               {item.postContent && (
                 <span style={{ color:'#555', display:'block', marginTop:3, fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                  &quot;{item.postContent}{item.postContent.length === 80 ? '…' : ''}&quot;
+                  &quot;{item.postContent}{item.postContent.length >= 80 ? '…' : ''}&quot;
                 </span>
               )}
               {item.replyContent && (
                 <span style={{ color:'#888', display:'block', marginTop:2, fontSize:12, fontStyle:'italic' }}>
-                  &quot;{item.replyContent}{item.replyContent.length === 80 ? '…' : ''}&quot;
+                  &quot;{item.replyContent}{item.replyContent.length >= 80 ? '…' : ''}&quot;
                 </span>
               )}
             </p>

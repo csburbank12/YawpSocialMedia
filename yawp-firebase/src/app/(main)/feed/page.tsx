@@ -110,8 +110,28 @@ export default function FeedPage() {
 
   return (
     <div style={{ maxWidth:640, margin:'0 auto', padding:'24px 16px' }}>
-      {/* First-time welcome nudge */}
-      {!hasPosted && posts.length > 0 && profile && !profile.bio && (
+      {/* Demo welcome — shown to demo users who haven't posted yet */}
+      {profile?.isDemo && !hasPosted && posts.length > 0 && (
+        <div style={{ background:'linear-gradient(135deg, #0D1500 0%, #0D1A0D 100%)', border:'1px solid #2A3A00', borderRadius:14, padding:'16px 20px', marginBottom:16 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+            <span style={{ background:'#E8FF47', color:'#0D0D0D', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:20, fontFamily:"'DM Mono',monospace" }}>DEMO</span>
+            <span style={{ color:'#E8FF47', fontWeight:700, fontSize:14 }}>Welcome to Yawp</span>
+          </div>
+          <p style={{ color:'#AAA', fontSize:13, fontFamily:'Georgia,serif', lineHeight:1.6, margin:'0 0 12px' }}>
+            You&apos;re Alex Rivera. Heart posts, reply to threads, explore{' '}
+            <span onClick={() => router.push('/circles')} style={{ color:'#47FFB2', cursor:'pointer' }}>Circles</span>,{' '}
+            <span onClick={() => router.push('/messages')} style={{ color:'#47FFB2', cursor:'pointer' }}>Messages</span>, and{' '}
+            <span onClick={() => router.push('/notifications')} style={{ color:'#47FFB2', cursor:'pointer' }}>Notifications</span>.
+            Or sound your own yawp below.
+          </p>
+          <button onClick={() => router.push('/signup')} style={{ background:'#E8FF47', border:'none', borderRadius:20, padding:'7px 16px', color:'#0D0D0D', fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:"'DM Mono',monospace" }}>
+            Create your real account →
+          </button>
+        </div>
+      )}
+
+      {/* First-time welcome for new (non-demo) users */}
+      {!profile?.isDemo && !hasPosted && posts.length > 0 && profile && !profile.bio && (
         <div style={{ background:'#0D1A0D', border:'1px solid #1A3A1A', borderRadius:14, padding:'14px 18px', marginBottom:16, display:'flex', alignItems:'center', gap:12 }}>
           <span style={{ color:'#47FFB2', fontSize:18, flexShrink:0 }}>⬡</span>
           <div style={{ flex:1 }}>

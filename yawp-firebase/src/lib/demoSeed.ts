@@ -203,10 +203,12 @@ async function seedAll(uids: string[]) {
   }
 
   // DM conversation between demo1 and demo2
+  // lastSenderId is demo1 (uids[0]) since Alex sent the final message
   const convRef = await addDoc(collection(db, 'conversations'), {
     participants: [uids[0], uids[1]],
     lastMessage: 'And here we are.',
     lastMessageAt: daysAgo(1),
+    lastSenderId: uids[0],
   })
   const DMS = [
     { sender: uids[0], text: "Hey — did you see Jordan's post about follower counts? Really well put.", ago: 3 },
