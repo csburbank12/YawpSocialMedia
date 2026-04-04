@@ -45,7 +45,13 @@ export default function LoginPage() {
       setDemoStatus('Opening Yawp…')
       router.push('/feed')
     } catch (err: any) {
-      setDemoStatus(err?.message || err?.code || 'Demo unavailable — try again shortly.')
+      const code = err?.code ?? ''
+      const msg = code === 'auth/operation-not-allowed'
+        ? 'Email sign-in is not enabled in the Firebase project. Enable it under Authentication → Sign-in method in the Firebase Console.'
+        : code === 'auth/network-request-failed'
+        ? 'Network error — please check your connection and try again.'
+        : err?.message || code || 'Demo unavailable — try again shortly.'
+      setDemoStatus(msg)
       setDemoLoading(false)
     }
   }
