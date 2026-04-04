@@ -109,14 +109,15 @@ function DemoBanner() {
 }
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, needsProfile } = useAuth()
   const router = useRouter()
   const [unreadNotifs, setUnreadNotifs] = useState(0)
   const [unreadMsgs, setUnreadMsgs] = useState(0)
 
   useEffect(() => {
     if (!loading && !user) router.push('/login')
-  }, [user, loading])
+    if (!loading && user && !profile && needsProfile) router.push('/complete-profile')
+  }, [user, profile, loading, needsProfile])
 
   useEffect(() => {
     if (!user) return
